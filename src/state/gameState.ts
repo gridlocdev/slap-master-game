@@ -1,8 +1,9 @@
-import type { GameState, Hand, PlayerState } from '../types.ts';
+import type { AbilityType, GameState, Hand, PlayerState } from '../types.ts';
 import {
   ARENA_X, ARENA_Y, ARENA_W, ARENA_H,
   PLAYER_RADIUS, HAND_OFFSET,
   P1_SPAWN_X, P1_SPAWN_Y, P2_SPAWN_X, P2_SPAWN_Y,
+  CHILD_SCALE,
 } from '../constants.ts';
 
 function createHand(side: 'left' | 'right'): Hand {
@@ -14,11 +15,12 @@ function createHand(side: 'left' | 'right'): Hand {
   };
 }
 
-function createPlayer(x: number, y: number): PlayerState {
+function createPlayer(x: number, y: number, ability: AbilityType): PlayerState {
+  const radius = ability === 'child' ? PLAYER_RADIUS * CHILD_SCALE : PLAYER_RADIUS;
   return {
     pos: { x, y },
     vel: { x: 0, y: 0 },
-    radius: PLAYER_RADIUS,
+    radius,
     facingAngle: 0,
     hands: [createHand('left'), createHand('right')],
     knockbackVel: { x: 0, y: 0 },
@@ -27,19 +29,42 @@ function createPlayer(x: number, y: number): PlayerState {
     fallTimer: 0,
     fallVelY: 0,
     fallAlpha: 1,
+    ability,
+    abilityCooldown: 0,
+    isDashing: false,
+    dashTimer: 0,
+    dashDir: { x: 0, y: 0 },
+    tauntTimer: 0,
+    lastSlapLeftTime: 0,
+    lastSlapRightTime: 0,
   };
 }
 
-export function createInitialState(): GameState {
+export function createInitialState(
+  p1Ability: AbilityType = 'burrito',
+  p2Ability: AbilityType = 'burrito',
+): GameState {
   return {
     players: [
-      createPlayer(P1_SPAWN_X, P1_SPAWN_Y),
-      createPlayer(P2_SPAWN_X, P2_SPAWN_Y),
+      createPlayer(P1_SPAWN_X, P1_SPAWN_Y, p1Ability),
+      createPlayer(P2_SPAWN_X, P2_SPAWN_Y, p2Ability),
     ],
     winner: null,
     arenaRect: { x: ARENA_X, y: ARENA_Y, w: ARENA_W, h: ARENA_H },
     restartTimer: 0,
+    stinkClouds: [],
+    melons: [],
+    juiceMarks: [],
+    phase: 'playing',
+    selections: [null, null],
   };
+}
+
+export function createSelectionState(): GameState {
+  const state = createInitialState();
+  state.phase = 'selecting';
+  state.selections = [null, null];
+  return state;
 }
 
 export function computeHandOffsets(player: PlayerState): void {

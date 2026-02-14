@@ -13,6 +13,7 @@ import {
   P1_BODY_COLOR, P1_HAND_COLOR,
   P2_BODY_COLOR, P2_HAND_COLOR,
   HAND_WINDUP_COLOR, HAND_ACTIVE_COLOR,
+  CHILD_SCALE,
 } from '../constants.ts';
 
 export interface PlayerMeshes {
@@ -95,7 +96,8 @@ function handColorTuple(baseColor: Color3Tuple, state: string): Color3Tuple {
 }
 
 export function updatePlayerMeshes(meshes: PlayerMeshes, player: PlayerState, idx: number): void {
-  const bodyY = PLAYER_RADIUS; // center of sphere sits on platform
+  const scale = player.ability === 'child' ? CHILD_SCALE : 1;
+  const bodyY = player.radius; // center of sphere sits on platform
   const visible = player.isAlive || player.isFalling;
 
   meshes.body.setEnabled(visible);
@@ -123,6 +125,25 @@ export function updatePlayerMeshes(meshes: PlayerMeshes, player: PlayerState, id
   // Vec2 {x,y} → Babylon (x, heightOffset, y) on XZ plane
   meshes.body.position.set(player.pos.x, bodyY + yOffset, player.pos.y);
 
+  // Child scale
+  meshes.body.scaling.setAll(scale);
+
+  // Dash green tint
+  const bodyColor = idx === 0 ? P1_BODY_COLOR : P2_BODY_COLOR;
+  if (player.isDashing) {
+    meshes.bodyMat.emissiveColor = new Color3(0.2, 0.9, 0.2);
+  } else {
+    meshes.bodyMat.emissiveColor = new Color3(...bodyColor);
+  }
+
+  // Taunt rotation
+  if (player.tauntTimer > 0) {
+    const tauntProgress = 1 - player.tauntTimer / 0.5;
+    meshes.body.rotation.y = tauntProgress * Math.PI * 2;
+  } else {
+    meshes.body.rotation.y = 0;
+  }
+
   // Hands
   const baseHandColor = idx === 0 ? P1_HAND_COLOR : P2_HAND_COLOR;
   for (let i = 0; i < 2; i++) {
@@ -134,8 +155,8 @@ export function updatePlayerMeshes(meshes: PlayerMeshes, player: PlayerState, id
     const handY = HAND_RADIUS;
     meshes.hands[i].position.set(pos.x, handY + yOffset, pos.y);
 
-    // Scale up slightly when active
-    const s = hand.state === 'active' ? 1.15 : 1;
+    // Scale up slightly when active, apply child scale
+    const s = (hand.state === 'active' ? 1.15 : 1) * scale;
     meshes.hands[i].scaling.setAll(s);
   }
 
@@ -146,20 +167,23 @@ export function updatePlayerMeshes(meshes: PlayerMeshes, player: PlayerState, id
   const perpX = -Math.sin(angle);
   const perpZ = Math.cos(angle);
 
-  const eyeDist = PLAYER_RADIUS * 0.4;
-  const eyeForward = PLAYER_RADIUS * 0.85;
-  const eyeY = bodyY + PLAYER_RADIUS * 0.2;
+  const r = player.radius;
+  const eyeDist = r * 0.4;
+  const eyeForward = r * 0.85;
+  const eyeY = bodyY + r * 0.2;
 
   for (let i = 0; i < 2; i++) {
     const sign = i === 0 ? 1 : -1;
     const ex = player.pos.x + fwdX * eyeForward + perpX * eyeDist * sign;
     const ez = player.pos.y + fwdZ * eyeForward + perpZ * eyeDist * sign;
     meshes.eyeWhites[i].position.set(ex, eyeY + yOffset, ez);
+    meshes.eyeWhites[i].scaling.setAll(scale);
 
     // Pupils slightly further forward
-    const pupilForward = eyeForward + PLAYER_RADIUS * 0.08;
+    const pupilForward = eyeForward + r * 0.08;
     const px = player.pos.x + fwdX * pupilForward + perpX * eyeDist * sign;
     const pz = player.pos.y + fwdZ * pupilForward + perpZ * eyeDist * sign;
     meshes.pupils[i].position.set(px, eyeY + yOffset, pz);
+    meshes.pupils[i].scaling.setAll(scale);
   }
 }

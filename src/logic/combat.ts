@@ -1,7 +1,7 @@
 import type { Hand, PlayerState, PlayerInput } from '../types.ts';
 import {
   WINDUP_TIME, ACTIVE_TIME, RECOVERY_TIME,
-  HAND_OFFSET, HAND_RADIUS, KNOCKBACK_FORCE,
+  HAND_OFFSET, HAND_RADIUS, KNOCKBACK_FORCE, CHILD_KB_MULT,
 } from '../constants.ts';
 
 export function triggerSlap(hand: Hand): void {
@@ -100,6 +100,7 @@ export function applyKnockback(attacker: PlayerState, defender: PlayerState): vo
 
   if (len === 0) return;
 
-  defender.knockbackVel.x += (dx / len) * KNOCKBACK_FORCE;
-  defender.knockbackVel.y += (dy / len) * KNOCKBACK_FORCE;
+  const force = attacker.ability === 'child' ? KNOCKBACK_FORCE * CHILD_KB_MULT : KNOCKBACK_FORCE;
+  defender.knockbackVel.x += (dx / len) * force;
+  defender.knockbackVel.y += (dy / len) * force;
 }

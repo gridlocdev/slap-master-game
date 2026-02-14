@@ -3,9 +3,20 @@ import { computeHandOffsets } from './state/gameState.ts';
 import { computeFacingAngle, applyMovement, applyVelocity } from './logic/movement.ts';
 import { handleSlapInput, updateHandState, checkSlapHit, applyKnockback } from './logic/combat.ts';
 import { isOutOfBounds } from './logic/arena.ts';
+import {
+  handleAbilityInput, updateDash, updateMelons, checkMelonCollisions,
+  checkMelonExplosion, updateStinkClouds, updateJuiceMarks, updateAbilityCooldowns,
+} from './logic/abilities.ts';
 import { FALL_DURATION, FALL_GRAVITY } from './constants.ts';
 
 export function updateGame(state: GameState, p1Input: PlayerInput, p2Input: PlayerInput, dt: number): void {
+  const inputs = [p1Input, p2Input] as const;
+
+  // Update ability cooldowns
+  for (const player of state.players) {
+    updateAbilityCooldowns(player, dt);
+  }
+
   // Update hand state machines
   for (const player of state.players) {
     for (const hand of player.hands) {
@@ -25,11 +36,20 @@ export function updateGame(state: GameState, p1Input: PlayerInput, p2Input: Play
   computeHandOffsets(state.players[0]);
   computeHandOffsets(state.players[1]);
 
-  // Apply movement (only for non-falling players)
+  // Handle ability input
+  for (let i = 0; i < 2; i++) {
+    handleAbilityInput(state.players[i], inputs[i], state, i);
+  }
+
+  // Update dashes
+  updateDash(state.players[0], state, state.players[1], dt);
+  updateDash(state.players[1], state, state.players[0], dt);
+
+  // Apply movement (only for non-falling, non-dashing players)
   for (let i = 0; i < 2; i++) {
     const player = state.players[i];
-    const input = i === 0 ? p1Input : p2Input;
-    if (!player.isFalling) {
+    const input = inputs[i];
+    if (!player.isFalling && !player.isDashing) {
       applyMovement(player, input, dt);
       applyVelocity(player, dt);
     }
@@ -42,6 +62,19 @@ export function updateGame(state: GameState, p1Input: PlayerInput, p2Input: Play
   if (checkSlapHit(state.players[1], state.players[0])) {
     applyKnockback(state.players[1], state.players[0]);
   }
+
+  // Update melons
+  updateMelons(state, dt);
+  checkMelonCollisions(state);
+
+  // Check melon explosions (double-slap)
+  for (let i = 0; i < 2; i++) {
+    checkMelonExplosion(state, i, inputs[i]);
+  }
+
+  // Update stink clouds and juice marks
+  updateStinkClouds(state, dt);
+  updateJuiceMarks(state, dt);
 
   // Check arena bounds → trigger falling
   for (let i = 0; i < 2; i++) {

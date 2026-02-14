@@ -41,6 +41,10 @@ export const ARENA_DANGER_COLOR: Color3Tuple = [0.267, 0.2, 0.2];
 // Arena danger zone (edge indicator)
 export const DANGER_ZONE_WIDTH = 0.8;
 
+// Ability input keys
+export const P1_ABILITY_KEY = 'KeyE';
+export const P2_ABILITY_KEY = 'KeyP';
+
 // Input mappings (DOM event.code values)
 export const P1_KEYS = {
   forward: 'KeyW',
@@ -49,6 +53,7 @@ export const P1_KEYS = {
   right: 'KeyD',
   slapLeft: 'KeyC',
   slapRight: 'KeyV',
+  ability: P1_ABILITY_KEY,
 } as const;
 
 export const P2_KEYS = {
@@ -58,7 +63,33 @@ export const P2_KEYS = {
   right: 'Semicolon',
   slapLeft: 'ArrowLeft',
   slapRight: 'ArrowRight',
+  ability: P2_ABILITY_KEY,
 } as const;
+
+// Abilities
+export const ABILITY_COOLDOWN = 3;
+export const DASH_SPEED = 12;
+export const DASH_DURATION = 0.3;
+export const DASH_KNOCKBACK = 5;
+export const STINK_CLOUD_DURATION = 3;
+export const STINK_CLOUD_RADIUS = 1.2;
+export const STINK_CLOUD_COLOR: Color3Tuple = [0.2, 0.8, 0.2];
+export const CHILD_SCALE = 0.7;
+export const CHILD_SPEED_MULT = 1.3;
+export const CHILD_KB_MULT = 0.7;
+export const TAUNT_DURATION = 0.5;
+export const TAUNT_COOLDOWN = 1;
+export const MELON_RADIUS = 0.35;
+export const MELON_SPEED = 8;
+export const MELON_INVULN_TIME = 0.3;
+export const MELON_FRICTION = 0.95;
+export const MELON_KNOCKBACK = 8;
+export const MELON_EXPLODE_RADIUS = 2.5;
+export const MELON_EXPLODE_KB = 20;
+export const MELON_COLOR: Color3Tuple = [0.2, 0.7, 0.1];
+export const JUICE_MARK_DURATION = 5;
+export const JUICE_MARK_COLOR: Color3Tuple = [0.8, 0.1, 0.1];
+export const DOUBLE_SLAP_WINDOW = 0.15;
 
 // Restart
 export const RESTART_DELAY = 0.5; // seconds

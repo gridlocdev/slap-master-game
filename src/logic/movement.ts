@@ -1,5 +1,5 @@
 import type { PlayerState, PlayerInput } from '../types.ts';
-import { MOVE_SPEED, KNOCKBACK_FRICTION } from '../constants.ts';
+import { MOVE_SPEED, KNOCKBACK_FRICTION, CHILD_SPEED_MULT } from '../constants.ts';
 
 export function computeFacingAngle(player: PlayerState, opponent: PlayerState): number {
   return Math.atan2(opponent.pos.y - player.pos.y, opponent.pos.x - player.pos.x);
@@ -21,9 +21,10 @@ export function applyMovement(player: PlayerState, input: PlayerInput, dt: numbe
   if (input.left) { dx -= rightX; dy -= rightY; }
 
   const len = Math.sqrt(dx * dx + dy * dy);
+  const speed = player.ability === 'child' ? MOVE_SPEED * CHILD_SPEED_MULT : MOVE_SPEED;
   if (len > 0) {
-    dx = (dx / len) * MOVE_SPEED * dt;
-    dy = (dy / len) * MOVE_SPEED * dt;
+    dx = (dx / len) * speed * dt;
+    dy = (dy / len) * speed * dt;
   }
 
   player.vel.x = dx;

@@ -23,6 +23,7 @@ export interface KeyMap {
   right: string;
   slapLeft: string;
   slapRight: string;
+  ability: string;
 }
 
 export function readInput(keyMap: KeyMap): PlayerInput {
@@ -33,6 +34,7 @@ export function readInput(keyMap: KeyMap): PlayerInput {
     right: keysHeld.has(keyMap.right),
     slapLeft: keysJustPressed.has(keyMap.slapLeft),
     slapRight: keysJustPressed.has(keyMap.slapRight),
+    ability: keysJustPressed.has(keyMap.ability),
   };
 }
 
@@ -55,6 +57,9 @@ const prevTriggerRight = new Map<number, boolean>();
 // "Just pressed" flags set during pollGamepads, cleared at frame end
 const triggerJustLeft = new Set<number>();
 const triggerJustRight = new Set<number>();
+// Track X button (index 2) for ability
+const buttonJustX = new Set<number>();
+const prevButtonX = new Map<number, boolean>();
 // Also track A/Start for restart
 const buttonJustA = new Set<number>();
 const prevButtonA = new Map<number, boolean>();
@@ -62,6 +67,7 @@ const prevButtonA = new Map<number, boolean>();
 export function pollGamepads(): void {
   triggerJustLeft.clear();
   triggerJustRight.clear();
+  buttonJustX.clear();
   buttonJustA.clear();
 
   const gamepads = navigator.getGamepads();
@@ -79,6 +85,11 @@ export function pollGamepads(): void {
     if (rtDown && !prevTriggerRight.get(i)) triggerJustRight.add(i);
     prevTriggerLeft.set(i, ltDown);
     prevTriggerRight.set(i, rtDown);
+
+    // X button (index 2) for ability
+    const xDown = gp.buttons[2]?.pressed ?? false;
+    if (xDown && !prevButtonX.get(i)) buttonJustX.add(i);
+    prevButtonX.set(i, xDown);
 
     // A button (index 0) or Start (index 9) for restart
     const aDown = gp.buttons[0]?.pressed ?? false;
@@ -117,6 +128,7 @@ export function readGamepadInput(padIndex: number, facingAngle: number): PlayerI
     left: rightComponent < -STICK_DEADZONE,
     slapLeft: triggerJustLeft.has(padIndex),
     slapRight: triggerJustRight.has(padIndex),
+    ability: buttonJustX.has(padIndex),
   };
 }
 
@@ -132,5 +144,6 @@ export function mergeInput(a: PlayerInput, b: PlayerInput): PlayerInput {
     right: a.right || b.right,
     slapLeft: a.slapLeft || b.slapLeft,
     slapRight: a.slapRight || b.slapRight,
+    ability: a.ability || b.ability,
   };
 }

@@ -13,6 +13,26 @@ export interface Hand {
   timer: number;
 }
 
+export type AbilityType = 'burrito' | 'child' | 'melon';
+
+export interface StinkCloud {
+  pos: Vec2;
+  timer: number;
+}
+
+export interface MelonState {
+  pos: Vec2;
+  vel: Vec2;
+  radius: number;
+  invulnTimer: number;
+  owner: number;
+}
+
+export interface JuiceMark {
+  pos: Vec2;
+  timer: number;
+}
+
 export interface PlayerState {
   pos: Vec2;
   vel: Vec2;
@@ -25,6 +45,14 @@ export interface PlayerState {
   fallTimer: number;
   fallVelY: number;
   fallAlpha: number;
+  ability: AbilityType;
+  abilityCooldown: number;
+  isDashing: boolean;
+  dashTimer: number;
+  dashDir: Vec2;
+  tauntTimer: number;
+  lastSlapLeftTime: number;
+  lastSlapRightTime: number;
 }
 
 export interface ArenaRect {
@@ -39,6 +67,11 @@ export interface GameState {
   winner: number | null;
   arenaRect: ArenaRect;
   restartTimer: number;
+  stinkClouds: StinkCloud[];
+  melons: MelonState[];
+  juiceMarks: JuiceMark[];
+  phase: 'selecting' | 'playing';
+  selections: [AbilityType | null, AbilityType | null];
 }
 
 export interface PlayerInput {
@@ -48,4 +81,5 @@ export interface PlayerInput {
   right: boolean;
   slapLeft: boolean;
   slapRight: boolean;
+  ability: boolean;
 }
