@@ -1,14 +1,16 @@
 ## Development Mode
 
 - Use composition over inheritance for game objects
-- Keep game state in plain objects, separate from Phaser classes
-- One scene per distinct game screen (menu, gameplay, gameover)
+- Keep game state in plain objects, separate from Babylon.js classes
 - Extract magic numbers into named constants at file top
-- Small, pure functions for game logic; Phaser methods only for rendering/input
+- Small, pure functions for game logic; Babylon.js methods only for rendering/input
 - Avoid deep nesting; early return from functions
 - TypeScript strict mode enabled
 - No `any` types; use interfaces for game entities
 - Keep update loops simple; delegate complex logic to separate functions
+- Vec2 `{x, y}` maps to Babylon `(x, heightOffset, y)` on XZ plane
+- All spatial constants in 3D units (pixel values ÷ 50)
+- Delta-time in seconds for all movement and timers
 
 ## Plan Mode
 

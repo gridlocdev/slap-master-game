@@ -1,78 +1,165 @@
+import {
+  Scene,
+  MeshBuilder,
+  StandardMaterial,
+  Color3,
+  Mesh,
+} from '@babylonjs/core';
 import type { PlayerState } from '../types.ts';
+import type { Color3Tuple } from '../constants.ts';
 import { getHandWorldPos } from '../logic/combat.ts';
 import {
-  HAND_RADIUS,
+  PLAYER_RADIUS, HAND_RADIUS,
   P1_BODY_COLOR, P1_HAND_COLOR,
   P2_BODY_COLOR, P2_HAND_COLOR,
   HAND_WINDUP_COLOR, HAND_ACTIVE_COLOR,
 } from '../constants.ts';
 
-function handColor(baseColor: number, state: string): number {
+export interface PlayerMeshes {
+  body: Mesh;
+  bodyMat: StandardMaterial;
+  hands: [Mesh, Mesh];
+  handMats: [StandardMaterial, StandardMaterial];
+  eyeWhites: [Mesh, Mesh];
+  eyeWhiteMats: [StandardMaterial, StandardMaterial];
+  pupils: [Mesh, Mesh];
+  pupilMats: [StandardMaterial, StandardMaterial];
+}
+
+export function createPlayerMeshes(scene: Scene, idx: number): PlayerMeshes {
+  const tag = idx === 0 ? 'p1' : 'p2';
+  const bodyColor = idx === 0 ? P1_BODY_COLOR : P2_BODY_COLOR;
+  const handColor = idx === 0 ? P1_HAND_COLOR : P2_HAND_COLOR;
+
+  // Body sphere
+  const body = MeshBuilder.CreateSphere(`${tag}_body`, { diameter: PLAYER_RADIUS * 2, segments: 16 }, scene);
+  const bodyMat = new StandardMaterial(`${tag}_bodyMat`, scene);
+  bodyMat.emissiveColor = new Color3(...bodyColor);
+  bodyMat.disableLighting = true;
+  body.material = bodyMat;
+
+  // Hand spheres
+  const hands: [Mesh, Mesh] = [
+    MeshBuilder.CreateSphere(`${tag}_handL`, { diameter: HAND_RADIUS * 2, segments: 12 }, scene),
+    MeshBuilder.CreateSphere(`${tag}_handR`, { diameter: HAND_RADIUS * 2, segments: 12 }, scene),
+  ];
+  const handMats: [StandardMaterial, StandardMaterial] = [
+    new StandardMaterial(`${tag}_handMatL`, scene),
+    new StandardMaterial(`${tag}_handMatR`, scene),
+  ];
+  for (let i = 0; i < 2; i++) {
+    handMats[i].emissiveColor = new Color3(...handColor);
+    handMats[i].disableLighting = true;
+    hands[i].material = handMats[i];
+  }
+
+  // Eye whites
+  const eyeSize = PLAYER_RADIUS * 0.18;
+  const eyeWhites: [Mesh, Mesh] = [
+    MeshBuilder.CreateSphere(`${tag}_eyeL`, { diameter: eyeSize * 2, segments: 8 }, scene),
+    MeshBuilder.CreateSphere(`${tag}_eyeR`, { diameter: eyeSize * 2, segments: 8 }, scene),
+  ];
+  const eyeWhiteMats: [StandardMaterial, StandardMaterial] = [
+    new StandardMaterial(`${tag}_eyeMatL`, scene),
+    new StandardMaterial(`${tag}_eyeMatR`, scene),
+  ];
+  for (let i = 0; i < 2; i++) {
+    eyeWhiteMats[i].emissiveColor = new Color3(1, 1, 1);
+    eyeWhiteMats[i].disableLighting = true;
+    eyeWhites[i].material = eyeWhiteMats[i];
+  }
+
+  // Pupils
+  const pupilSize = eyeSize * 0.6;
+  const pupils: [Mesh, Mesh] = [
+    MeshBuilder.CreateSphere(`${tag}_pupilL`, { diameter: pupilSize * 2, segments: 8 }, scene),
+    MeshBuilder.CreateSphere(`${tag}_pupilR`, { diameter: pupilSize * 2, segments: 8 }, scene),
+  ];
+  const pupilMats: [StandardMaterial, StandardMaterial] = [
+    new StandardMaterial(`${tag}_pupilMatL`, scene),
+    new StandardMaterial(`${tag}_pupilMatR`, scene),
+  ];
+  for (let i = 0; i < 2; i++) {
+    pupilMats[i].emissiveColor = new Color3(0, 0, 0);
+    pupilMats[i].disableLighting = true;
+    pupils[i].material = pupilMats[i];
+  }
+
+  return { body, bodyMat, hands, handMats, eyeWhites, eyeWhiteMats, pupils, pupilMats };
+}
+
+function handColorTuple(baseColor: Color3Tuple, state: string): Color3Tuple {
   if (state === 'windup') return HAND_WINDUP_COLOR;
   if (state === 'active') return HAND_ACTIVE_COLOR;
   return baseColor;
 }
 
-export function drawPlayer(gfx: Phaser.GameObjects.Graphics, player: PlayerState, playerIndex: number): void {
-  if (!player.isAlive) return;
+export function updatePlayerMeshes(meshes: PlayerMeshes, player: PlayerState, idx: number): void {
+  const bodyY = PLAYER_RADIUS; // center of sphere sits on platform
+  const visible = player.isAlive || player.isFalling;
 
-  const bodyColor = playerIndex === 0 ? P1_BODY_COLOR : P2_BODY_COLOR;
-  const baseHandColor = playerIndex === 0 ? P1_HAND_COLOR : P2_HAND_COLOR;
+  meshes.body.setEnabled(visible);
+  for (const h of meshes.hands) h.setEnabled(visible);
+  for (const e of meshes.eyeWhites) e.setEnabled(visible);
+  for (const p of meshes.pupils) p.setEnabled(visible);
 
-  // Draw hands (behind body for visual layering)
-  for (const hand of player.hands) {
-    const pos = getHandWorldPos(player, hand);
-    const color = handColor(baseHandColor, hand.state);
-    const radius = hand.state === 'active' ? HAND_RADIUS + 2 : HAND_RADIUS;
+  if (!visible) return;
 
-    gfx.fillStyle(color, 1);
-    gfx.fillCircle(pos.x, pos.y, radius);
-
-    // Hand outline
-    gfx.lineStyle(2, 0x000000, 0.3);
-    gfx.strokeCircle(pos.x, pos.y, radius);
+  // Fall animation: drop Y and fade alpha
+  let yOffset = 0;
+  if (player.isFalling) {
+    yOffset = -player.fallVelY * player.fallTimer;
+    meshes.bodyMat.alpha = player.fallAlpha;
+    for (const m of meshes.handMats) m.alpha = player.fallAlpha;
+    for (const m of meshes.eyeWhiteMats) m.alpha = player.fallAlpha;
+    for (const m of meshes.pupilMats) m.alpha = player.fallAlpha;
+  } else {
+    meshes.bodyMat.alpha = 1;
+    for (const m of meshes.handMats) m.alpha = 1;
+    for (const m of meshes.eyeWhiteMats) m.alpha = 1;
+    for (const m of meshes.pupilMats) m.alpha = 1;
   }
 
-  // Draw body
-  gfx.fillStyle(bodyColor, 1);
-  gfx.fillCircle(player.pos.x, player.pos.y, player.radius);
+  // Vec2 {x,y} → Babylon (x, heightOffset, y) on XZ plane
+  meshes.body.position.set(player.pos.x, bodyY + yOffset, player.pos.y);
 
-  // Body outline
-  gfx.lineStyle(2, 0x000000, 0.3);
-  gfx.strokeCircle(player.pos.x, player.pos.y, player.radius);
+  // Hands
+  const baseHandColor = idx === 0 ? P1_HAND_COLOR : P2_HAND_COLOR;
+  for (let i = 0; i < 2; i++) {
+    const hand = player.hands[i];
+    const pos = getHandWorldPos(player, hand);
+    const color = handColorTuple(baseHandColor, hand.state);
+    meshes.handMats[i].emissiveColor = new Color3(...color);
 
-  // Eyes (face toward opponent)
-  const eyeDist = player.radius * 0.4;
-  const eyeSize = 4;
-  const perpX = -Math.sin(player.facingAngle);
-  const perpY = Math.cos(player.facingAngle);
-  const fwdX = Math.cos(player.facingAngle);
-  const fwdY = Math.sin(player.facingAngle);
+    const handY = HAND_RADIUS;
+    meshes.hands[i].position.set(pos.x, handY + yOffset, pos.y);
 
-  const eyeForward = player.radius * 0.3;
+    // Scale up slightly when active
+    const s = hand.state === 'active' ? 1.15 : 1;
+    meshes.hands[i].scaling.setAll(s);
+  }
 
-  gfx.fillStyle(0xffffff, 1);
-  gfx.fillCircle(
-    player.pos.x + fwdX * eyeForward + perpX * eyeDist,
-    player.pos.y + fwdY * eyeForward + perpY * eyeDist,
-    eyeSize + 1,
-  );
-  gfx.fillCircle(
-    player.pos.x + fwdX * eyeForward - perpX * eyeDist,
-    player.pos.y + fwdY * eyeForward - perpY * eyeDist,
-    eyeSize + 1,
-  );
+  // Eyes — positioned on the body facing the opponent
+  const angle = player.facingAngle;
+  const fwdX = Math.cos(angle);
+  const fwdZ = Math.sin(angle);
+  const perpX = -Math.sin(angle);
+  const perpZ = Math.cos(angle);
 
-  // Pupils
-  gfx.fillStyle(0x000000, 1);
-  gfx.fillCircle(
-    player.pos.x + fwdX * (eyeForward + 2) + perpX * eyeDist,
-    player.pos.y + fwdY * (eyeForward + 2) + perpY * eyeDist,
-    eyeSize - 1,
-  );
-  gfx.fillCircle(
-    player.pos.x + fwdX * (eyeForward + 2) - perpX * eyeDist,
-    player.pos.y + fwdY * (eyeForward + 2) - perpY * eyeDist,
-    eyeSize - 1,
-  );
+  const eyeDist = PLAYER_RADIUS * 0.4;
+  const eyeForward = PLAYER_RADIUS * 0.85;
+  const eyeY = bodyY + PLAYER_RADIUS * 0.2;
+
+  for (let i = 0; i < 2; i++) {
+    const sign = i === 0 ? 1 : -1;
+    const ex = player.pos.x + fwdX * eyeForward + perpX * eyeDist * sign;
+    const ez = player.pos.y + fwdZ * eyeForward + perpZ * eyeDist * sign;
+    meshes.eyeWhites[i].position.set(ex, eyeY + yOffset, ez);
+
+    // Pupils slightly further forward
+    const pupilForward = eyeForward + PLAYER_RADIUS * 0.08;
+    const px = player.pos.x + fwdX * pupilForward + perpX * eyeDist * sign;
+    const pz = player.pos.y + fwdZ * pupilForward + perpZ * eyeDist * sign;
+    meshes.pupils[i].position.set(px, eyeY + yOffset, pz);
+  }
 }

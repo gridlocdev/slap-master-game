@@ -1,28 +1,28 @@
 import type { Hand, PlayerState, PlayerInput } from '../types.ts';
 import {
-  WINDUP_FRAMES, ACTIVE_FRAMES, RECOVERY_FRAMES,
-  HAND_EXTEND_DISTANCE, HAND_RADIUS, KNOCKBACK_FORCE,
+  WINDUP_TIME, ACTIVE_TIME, RECOVERY_TIME,
+  HAND_OFFSET, HAND_RADIUS, KNOCKBACK_FORCE,
 } from '../constants.ts';
 
 export function triggerSlap(hand: Hand): void {
   if (hand.state !== 'idle') return;
   hand.state = 'windup';
-  hand.timer = WINDUP_FRAMES;
+  hand.timer = WINDUP_TIME;
 }
 
-export function updateHandState(hand: Hand): void {
+export function updateHandState(hand: Hand, dt: number): void {
   if (hand.state === 'idle') return;
 
-  hand.timer--;
+  hand.timer -= dt;
   if (hand.timer <= 0) {
     switch (hand.state) {
       case 'windup':
         hand.state = 'active';
-        hand.timer = ACTIVE_FRAMES;
+        hand.timer = ACTIVE_TIME;
         break;
       case 'active':
         hand.state = 'recovery';
-        hand.timer = RECOVERY_FRAMES;
+        hand.timer = RECOVERY_TIME;
         break;
       case 'recovery':
         hand.state = 'idle';
@@ -37,34 +37,47 @@ export function handleSlapInput(player: PlayerState, input: PlayerInput): void {
   if (input.slapRight) triggerSlap(player.hands[1]);
 }
 
-export function getHandWorldPos(player: PlayerState, hand: Hand): { x: number; y: number } {
-  let ox = hand.offset.x;
-  let oy = hand.offset.y;
+// Slap arc angles (relative to facing direction)
+const IDLE_ANGLE = Math.PI / 2;       // 90° — perpendicular at side
+const WINDUP_ANGLE = Math.PI * 0.8;   // 144° — pulled back behind
+const SWING_END_ANGLE = -Math.PI * 0.3; // -54° — swung past front to opposite side
+const SLAP_REACH = 0.85;              // arm extends during active swing
 
-  if (hand.state === 'active') {
-    // Extend forward toward opponent
-    const fwdX = Math.cos(player.facingAngle);
-    const fwdY = Math.sin(player.facingAngle);
-    const t = 1 - (hand.timer / ACTIVE_FRAMES);
-    ox += fwdX * HAND_EXTEND_DISTANCE * t;
-    oy += fwdY * HAND_EXTEND_DISTANCE * t;
-  } else if (hand.state === 'windup') {
-    // Pull back slightly
-    const fwdX = Math.cos(player.facingAngle);
-    const fwdY = Math.sin(player.facingAngle);
-    ox -= fwdX * 8;
-    oy -= fwdY * 8;
+export function getHandWorldPos(player: PlayerState, hand: Hand): { x: number; y: number } {
+  const facing = player.facingAngle;
+  // Left hand swings clockwise (positive → negative angle), right swings counter-clockwise
+  const sign = hand.side === 'left' ? 1 : -1;
+  let angle: number;
+  let reach = HAND_OFFSET;
+
+  if (hand.state === 'windup') {
+    // Interpolate from idle position back to windup
+    const t = 1 - (hand.timer / WINDUP_TIME);
+    angle = IDLE_ANGLE + (WINDUP_ANGLE - IDLE_ANGLE) * t;
+  } else if (hand.state === 'active') {
+    // Sweep from windup position across the front
+    const t = 1 - (hand.timer / ACTIVE_TIME);
+    angle = WINDUP_ANGLE + (SWING_END_ANGLE - WINDUP_ANGLE) * t;
+    // Extend reach at the midpoint of the swing for more impact
+    const reachT = Math.sin(t * Math.PI);
+    reach = HAND_OFFSET + (SLAP_REACH - HAND_OFFSET) * reachT;
+  } else if (hand.state === 'recovery') {
+    // Return from swing end back to idle
+    const t = 1 - (hand.timer / RECOVERY_TIME);
+    angle = SWING_END_ANGLE + (IDLE_ANGLE - SWING_END_ANGLE) * t;
+  } else {
+    angle = IDLE_ANGLE;
   }
 
+  const handAngle = facing + angle * sign;
+
   return {
-    x: player.pos.x + ox,
-    y: player.pos.y + oy,
+    x: player.pos.x + Math.cos(handAngle) * reach,
+    y: player.pos.y + Math.sin(handAngle) * reach,
   };
 }
 
 export function checkSlapHit(attacker: PlayerState, defender: PlayerState): boolean {
-  let hit = false;
-
   for (const hand of attacker.hands) {
     if (hand.state !== 'active') continue;
 
@@ -74,12 +87,10 @@ export function checkSlapHit(attacker: PlayerState, defender: PlayerState): bool
     const dist = Math.sqrt(dx * dx + dy * dy);
     const hitDist = HAND_RADIUS + defender.radius;
 
-    if (dist < hitDist) {
-      hit = true;
-    }
+    if (dist < hitDist) return true;
   }
 
-  return hit;
+  return false;
 }
 
 export function applyKnockback(attacker: PlayerState, defender: PlayerState): void {

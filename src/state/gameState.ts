@@ -23,6 +23,10 @@ function createPlayer(x: number, y: number): PlayerState {
     hands: [createHand('left'), createHand('right')],
     knockbackVel: { x: 0, y: 0 },
     isAlive: true,
+    isFalling: false,
+    fallTimer: 0,
+    fallVelY: 0,
+    fallAlpha: 1,
   };
 }
 

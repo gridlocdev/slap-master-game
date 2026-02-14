@@ -21,6 +21,10 @@ export interface PlayerState {
   hands: [Hand, Hand];
   knockbackVel: Vec2;
   isAlive: boolean;
+  isFalling: boolean;
+  fallTimer: number;
+  fallVelY: number;
+  fallAlpha: number;
 }
 
 export interface ArenaRect {
