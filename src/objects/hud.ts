@@ -22,13 +22,13 @@ export function createHud(scene: Phaser.Scene): HudElements {
     fontFamily: 'monospace',
   }).setOrigin(0.5).setVisible(false);
 
-  const p1Label = scene.add.text(20, 10, 'P1: WASD + Q/E', {
+  const p1Label = scene.add.text(20, 10, 'P1: WASD + C/V', {
     fontSize: '14px',
     color: '#4488ff',
     fontFamily: 'monospace',
   });
 
-  const p2Label = scene.add.text(GAME_W - 20, 10, 'P2: OKL; + U/P', {
+  const p2Label = scene.add.text(GAME_W - 20, 10, 'P2: OKL; + ←/→', {
     fontSize: '14px',
     color: '#ff4444',
     fontFamily: 'monospace',

@@ -50,8 +50,8 @@ export const P1_KEYS = {
   back: 'S',
   left: 'A',
   right: 'D',
-  slapLeft: 'Q',
-  slapRight: 'E',
+  slapLeft: 'C',
+  slapRight: 'V',
 } as const;
 
 export const P2_KEYS = {
@@ -59,8 +59,8 @@ export const P2_KEYS = {
   back: 'L',
   left: 'K',
   right: 'SEMICOLON',
-  slapLeft: 'U',
-  slapRight: 'P',
+  slapLeft: 'LEFT',
+  slapRight: 'RIGHT',
 } as const;
 
 // Restart
