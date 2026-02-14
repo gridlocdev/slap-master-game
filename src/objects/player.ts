@@ -95,6 +95,13 @@ function handColorTuple(baseColor: Color3Tuple, state: string): Color3Tuple {
   return baseColor;
 }
 
+export function setPlayerMeshesVisible(meshes: PlayerMeshes, visible: boolean): void {
+  meshes.body.setEnabled(visible);
+  for (const h of meshes.hands) h.setEnabled(visible);
+  for (const e of meshes.eyeWhites) e.setEnabled(visible);
+  for (const p of meshes.pupils) p.setEnabled(visible);
+}
+
 export function updatePlayerMeshes(meshes: PlayerMeshes, player: PlayerState, idx: number): void {
   const scale = player.ability === 'child' ? CHILD_SCALE : 1;
   const bodyY = player.radius; // center of sphere sits on platform

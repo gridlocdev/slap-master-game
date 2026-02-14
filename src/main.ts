@@ -1,6 +1,6 @@
 import { createScene } from './scene.ts';
 import { createArenaMeshes } from './objects/arena.ts';
-import { createPlayerMeshes, updatePlayerMeshes } from './objects/player.ts';
+import { createPlayerMeshes, updatePlayerMeshes, setPlayerMeshesVisible } from './objects/player.ts';
 import { createHud, updateHud, setHudVisible } from './objects/hud.ts';
 import { createEffectsPool, updateEffects } from './objects/effects.ts';
 import {
@@ -30,14 +30,18 @@ let state = createSelectionState();
 let selectionUI = createSelectionUI(scene);
 let gamePhase: 'selecting' | 'playing' = 'selecting';
 
-// Hide gameplay HUD during selection
+// Hide gameplay HUD and player meshes during selection
 setHudVisible(hud, false);
+setPlayerMeshesVisible(playerMeshes[0], false);
+setPlayerMeshesVisible(playerMeshes[1], false);
 
 function startGame(p1Ability: AbilityType, p2Ability: AbilityType): void {
   state = createInitialState(p1Ability, p2Ability);
   gamePhase = 'playing';
   destroySelectionUI(selectionUI);
   setHudVisible(hud, true);
+  setPlayerMeshesVisible(playerMeshes[0], true);
+  setPlayerMeshesVisible(playerMeshes[1], true);
 }
 
 function goToSelection(): void {
@@ -45,6 +49,8 @@ function goToSelection(): void {
   gamePhase = 'selecting';
   selectionUI = createSelectionUI(scene);
   setHudVisible(hud, false);
+  setPlayerMeshesVisible(playerMeshes[0], false);
+  setPlayerMeshesVisible(playerMeshes[1], false);
 }
 
 engine.runRenderLoop(() => {
@@ -52,16 +58,13 @@ engine.runRenderLoop(() => {
   pollGamepads();
 
   if (gamePhase === 'selecting') {
-    const bothReady = updateSelection(selectionUI, state);
+    const bothReady = updateSelection(selectionUI, state, dt);
     if (bothReady) {
       const p1Ability = state.selections[0]!;
       const p2Ability = state.selections[1]!;
       startGame(p1Ability, p2Ability);
     }
 
-    // Update player meshes at spawn positions during selection
-    updatePlayerMeshes(playerMeshes[0], state.players[0], 0);
-    updatePlayerMeshes(playerMeshes[1], state.players[1], 1);
   } else {
     // Keyboard input
     let p1Input = readInput(P1_KEYS);
