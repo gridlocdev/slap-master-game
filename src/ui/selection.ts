@@ -53,6 +53,7 @@ const STAGE_CAM_TARGET = new Vector3(0, 0.6, 0);
 const P1_STAGE_X = -2.2;
 const P2_STAGE_X = 2.2;
 const PLAYER_STAGE_Z = 0;
+const PLAYER_STAGE_Y = 1.2;
 const BACKDROP_Z = 2.5;
 const BACKDROP_W = 6;
 const BACKDROP_H = 5;
@@ -142,7 +143,7 @@ export function updateSelectionMeshes(
   for (let idx = 0; idx < 2; idx++) {
     const meshes = playerMeshes[idx];
     const stageX = idx === 0 ? P1_STAGE_X : P2_STAGE_X;
-    const bodyY = PLAYER_RADIUS + bounce;
+    const bodyY = PLAYER_STAGE_Y + PLAYER_RADIUS + bounce;
 
     // Body
     meshes.body.position.set(stageX, bodyY, PLAYER_STAGE_Z);
@@ -153,7 +154,7 @@ export function updateSelectionMeshes(
 
     // Hands — at sides, facing camera (spread along X)
     const handColor = idx === 0 ? P1_HAND_COLOR : P2_HAND_COLOR;
-    const handY = HAND_RADIUS + handBounce;
+    const handY = PLAYER_STAGE_Y + HAND_RADIUS + handBounce;
     for (let h = 0; h < 2; h++) {
       const sign = h === 0 ? -1 : 1;
       meshes.hands[h].position.set(
