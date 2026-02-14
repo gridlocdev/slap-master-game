@@ -13,7 +13,7 @@ import {
   P1_BODY_COLOR, P1_HAND_COLOR,
   P2_BODY_COLOR, P2_HAND_COLOR,
   HAND_WINDUP_COLOR, HAND_ACTIVE_COLOR,
-  CHILD_SCALE,
+  CHILD_SCALE, TAUNT_DURATION,
 } from '../constants.ts';
 
 export interface PlayerMeshes {
@@ -136,15 +136,16 @@ export function updatePlayerMeshes(meshes: PlayerMeshes, player: PlayerState, id
     meshes.bodyMat.emissiveColor = new Color3(...bodyColor);
   }
 
-  // Taunt rotation
+  // Taunt spin offset (applied to hands + eyes so the whole player visually spins)
+  let tauntAngle = 0;
   if (player.tauntTimer > 0) {
-    const tauntProgress = 1 - player.tauntTimer / 0.5;
-    meshes.body.rotation.y = tauntProgress * Math.PI * 2;
-  } else {
-    meshes.body.rotation.y = 0;
+    const t = 1 - player.tauntTimer / TAUNT_DURATION;
+    const eased = t < 0.5 ? 8 * t * t * t * t : 1 - 8 * (1 - t) * (1 - t) * (1 - t) * (1 - t);
+    tauntAngle = eased * Math.PI * 2;
   }
+  meshes.body.rotation.y = 0;
 
-  // Hands
+  // Hands — apply taunt spin to hand positions
   const baseHandColor = idx === 0 ? P1_HAND_COLOR : P2_HAND_COLOR;
   for (let i = 0; i < 2; i++) {
     const hand = player.hands[i];
@@ -152,8 +153,20 @@ export function updatePlayerMeshes(meshes: PlayerMeshes, player: PlayerState, id
     const color = handColorTuple(baseHandColor, hand.state);
     meshes.handMats[i].emissiveColor = new Color3(...color);
 
+    // Rotate hand position around player center by tauntAngle
+    let hx = pos.x;
+    let hz = pos.y;
+    if (tauntAngle !== 0) {
+      const rx = pos.x - player.pos.x;
+      const rz = pos.y - player.pos.y;
+      const cosT = Math.cos(tauntAngle);
+      const sinT = Math.sin(tauntAngle);
+      hx = player.pos.x + rx * cosT - rz * sinT;
+      hz = player.pos.y + rx * sinT + rz * cosT;
+    }
+
     const handY = HAND_RADIUS;
-    meshes.hands[i].position.set(pos.x, handY + yOffset, pos.y);
+    meshes.hands[i].position.set(hx, handY + yOffset, hz);
 
     // Scale up slightly when active, apply child scale
     const s = (hand.state === 'active' ? 1.15 : 1) * scale;
@@ -161,7 +174,7 @@ export function updatePlayerMeshes(meshes: PlayerMeshes, player: PlayerState, id
   }
 
   // Eyes — positioned on the body facing the opponent
-  const angle = player.facingAngle;
+  const angle = player.facingAngle + tauntAngle;
   const fwdX = Math.cos(angle);
   const fwdZ = Math.sin(angle);
   const perpX = -Math.sin(angle);
