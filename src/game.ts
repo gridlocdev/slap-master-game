@@ -9,6 +9,28 @@ import {
 } from './logic/abilities.ts';
 import { FALL_DURATION, FALL_GRAVITY } from './constants.ts';
 
+function separatePlayers(state: GameState): void {
+  const p0 = state.players[0];
+  const p1 = state.players[1];
+  if (p0.isFalling || p1.isFalling) return;
+
+  const dx = p1.pos.x - p0.pos.x;
+  const dy = p1.pos.y - p0.pos.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const minDist = p0.radius + p1.radius;
+
+  if (dist >= minDist || dist === 0) return;
+
+  const overlap = (minDist - dist) / 2;
+  const nx = dx / dist;
+  const ny = dy / dist;
+
+  p0.pos.x -= nx * overlap;
+  p0.pos.y -= ny * overlap;
+  p1.pos.x += nx * overlap;
+  p1.pos.y += ny * overlap;
+}
+
 export function updateGame(state: GameState, p1Input: PlayerInput, p2Input: PlayerInput, dt: number): void {
   const inputs = [p1Input, p2Input] as const;
 
@@ -54,6 +76,9 @@ export function updateGame(state: GameState, p1Input: PlayerInput, p2Input: Play
       applyVelocity(player, dt);
     }
   }
+
+  // Separate overlapping players
+  separatePlayers(state);
 
   // Check slap hits
   if (checkSlapHit(state.players[0], state.players[1])) {
