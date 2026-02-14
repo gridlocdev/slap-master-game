@@ -1,7 +1,21 @@
-import { Scene } from '@babylonjs/core';
-import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, StackPanel, Ellipse } from '@babylonjs/gui';
+import {
+  Scene,
+  MeshBuilder,
+  StandardMaterial,
+  Color3,
+  Mesh,
+  FreeCamera,
+  Vector3,
+} from '@babylonjs/core';
+import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, StackPanel } from '@babylonjs/gui';
 import type { AbilityType, GameState } from '../types.ts';
+import type { PlayerMeshes } from '../objects/player.ts';
 import { isKeyJustPressed } from '../input.ts';
+import {
+  PLAYER_RADIUS, HAND_RADIUS, HAND_OFFSET,
+  P1_BODY_COLOR, P1_HAND_COLOR,
+  P2_BODY_COLOR, P2_HAND_COLOR,
+} from '../constants.ts';
 
 const ABILITIES: AbilityType[] = ['burrito', 'child', 'melon'];
 
@@ -21,9 +35,8 @@ const ABILITY_INFO: Record<AbilityType, { name: string; desc: string }> = {
 };
 
 const RANDOM_LABEL = 'RANDOM';
-const CARD_COUNT = ABILITIES.length + 1; // +1 for random
+const CARD_COUNT = ABILITIES.length + 1;
 
-// Card styling per ability
 const CARD_STYLES: Record<string, { bg: string; border: string }> = {
   burrito: { bg: '#2d5a1e', border: '#33cc33' },
   child: { bg: '#5a3a1e', border: '#ff8833' },
@@ -33,39 +46,191 @@ const CARD_STYLES: Record<string, { bg: string; border: string }> = {
 
 const P1_COLOR = '#4488ff';
 const P2_COLOR = '#ff4444';
-const P1_BODY_HEX = '#4488ff';
-const P1_HAND_HEX = '#66aaff';
-const P2_BODY_HEX = '#ff4444';
-const P2_HAND_HEX = '#ff6666';
-const P1_BG = '#cc8800';
-const P2_BG = '#0088aa';
-const PANEL_BG_ALPHA = 0.85;
 
-// Idle bounce animation
-const BOUNCE_SPEED = 1.8; // full cycles per second
-const BOUNCE_AMPLITUDE = 12; // pixels
+// 3D stage layout
+const STAGE_CAM_POS = new Vector3(0, 1.2, -5.5);
+const STAGE_CAM_TARGET = new Vector3(0, 0.6, 0);
+const P1_STAGE_X = -2.2;
+const P2_STAGE_X = 2.2;
+const PLAYER_STAGE_Z = 0;
+const BACKDROP_Z = 2.5;
+const BACKDROP_W = 6;
+const BACKDROP_H = 5;
+const FLOOR_Y = -0.05;
+
+// Idle bounce
+const BOUNCE_SPEED = 0.8;
+const BOUNCE_AMPLITUDE = 0.15;
 let bounceTime = 0;
+
+// --- 3D Stage ---
+
+export interface SelectionStage {
+  backdrops: [Mesh, Mesh];
+  backdropMats: [StandardMaterial, StandardMaterial];
+  divider: Mesh;
+  floor: Mesh;
+  floorMat: StandardMaterial;
+}
+
+export function createSelectionStage(scene: Scene): SelectionStage {
+  // P1 backdrop (orange)
+  const bd1 = MeshBuilder.CreatePlane('selBd1', { width: BACKDROP_W, height: BACKDROP_H }, scene);
+  bd1.position.set(P1_STAGE_X, BACKDROP_H / 2 - 0.5, BACKDROP_Z);
+  const bd1Mat = new StandardMaterial('selBd1Mat', scene);
+  bd1Mat.emissiveColor = new Color3(0.8, 0.5, 0.0);
+  bd1Mat.disableLighting = true;
+  bd1Mat.alpha = 0.7;
+  bd1.material = bd1Mat;
+
+  // P2 backdrop (cyan)
+  const bd2 = MeshBuilder.CreatePlane('selBd2', { width: BACKDROP_W, height: BACKDROP_H }, scene);
+  bd2.position.set(P2_STAGE_X, BACKDROP_H / 2 - 0.5, BACKDROP_Z);
+  const bd2Mat = new StandardMaterial('selBd2Mat', scene);
+  bd2Mat.emissiveColor = new Color3(0.0, 0.5, 0.7);
+  bd2Mat.disableLighting = true;
+  bd2Mat.alpha = 0.7;
+  bd2.material = bd2Mat;
+
+  // Center divider
+  const divider = MeshBuilder.CreatePlane('selDivider', { width: 0.08, height: BACKDROP_H }, scene);
+  divider.position.set(0, BACKDROP_H / 2 - 0.5, BACKDROP_Z - 0.01);
+  const divMat = new StandardMaterial('selDivMat', scene);
+  divMat.emissiveColor = new Color3(0, 0, 0);
+  divMat.disableLighting = true;
+  divider.material = divMat;
+
+  // Stage floor
+  const floor = MeshBuilder.CreateGround('selFloor', { width: 14, height: 8 }, scene);
+  floor.position.set(0, FLOOR_Y, BACKDROP_Z / 2);
+  const floorMat = new StandardMaterial('selFloorMat', scene);
+  floorMat.emissiveColor = new Color3(0.12, 0.12, 0.2);
+  floorMat.disableLighting = true;
+  floor.material = floorMat;
+
+  return {
+    backdrops: [bd1, bd2],
+    backdropMats: [bd1Mat, bd2Mat],
+    divider,
+    floor,
+    floorMat,
+  };
+}
+
+export function setSelectionStageVisible(stage: SelectionStage, visible: boolean): void {
+  for (const b of stage.backdrops) b.setEnabled(visible);
+  stage.divider.setEnabled(visible);
+  stage.floor.setEnabled(visible);
+}
+
+export function disposeSelectionStage(stage: SelectionStage): void {
+  for (const b of stage.backdrops) b.dispose();
+  stage.divider.dispose();
+  stage.floor.dispose();
+}
+
+/** Position the player meshes on the selection stage facing the camera, with bounce. */
+export function updateSelectionMeshes(
+  playerMeshes: readonly [PlayerMeshes, PlayerMeshes],
+  dt: number,
+): void {
+  bounceTime += dt;
+  const bounce = Math.sin(bounceTime * BOUNCE_SPEED * Math.PI * 2) * BOUNCE_AMPLITUDE;
+  // Hands bounce slightly out of phase
+  const handBounce = Math.sin(bounceTime * BOUNCE_SPEED * Math.PI * 2 + 0.8) * BOUNCE_AMPLITUDE * 0.5;
+
+  for (let idx = 0; idx < 2; idx++) {
+    const meshes = playerMeshes[idx];
+    const stageX = idx === 0 ? P1_STAGE_X : P2_STAGE_X;
+    const bodyY = PLAYER_RADIUS + bounce;
+
+    // Body
+    meshes.body.position.set(stageX, bodyY, PLAYER_STAGE_Z);
+    meshes.body.scaling.setAll(1);
+    const bodyColor = idx === 0 ? P1_BODY_COLOR : P2_BODY_COLOR;
+    meshes.bodyMat.emissiveColor = new Color3(...bodyColor);
+    meshes.bodyMat.alpha = 1;
+
+    // Hands — at sides, facing camera (spread along X)
+    const handColor = idx === 0 ? P1_HAND_COLOR : P2_HAND_COLOR;
+    const handY = HAND_RADIUS + handBounce;
+    for (let h = 0; h < 2; h++) {
+      const sign = h === 0 ? -1 : 1;
+      meshes.hands[h].position.set(
+        stageX + sign * HAND_OFFSET,
+        handY,
+        PLAYER_STAGE_Z,
+      );
+      meshes.hands[h].scaling.setAll(1);
+      meshes.handMats[h].emissiveColor = new Color3(...handColor);
+      meshes.handMats[h].alpha = 1;
+    }
+
+    // Eyes — facing camera (toward -Z)
+    const r = PLAYER_RADIUS;
+    const eyeDist = r * 0.4;
+    const eyeForward = r * 0.85;
+    const eyeY = bodyY + r * 0.2;
+
+    for (let e = 0; e < 2; e++) {
+      const sign = e === 0 ? -1 : 1;
+      // Forward is -Z (toward camera), perpendicular is X
+      meshes.eyeWhites[e].position.set(
+        stageX + sign * eyeDist,
+        eyeY,
+        PLAYER_STAGE_Z - eyeForward,
+      );
+      meshes.eyeWhites[e].scaling.setAll(1);
+      meshes.eyeWhiteMats[e].alpha = 1;
+
+      const pupilForward = eyeForward + r * 0.08;
+      meshes.pupils[e].position.set(
+        stageX + sign * eyeDist,
+        eyeY,
+        PLAYER_STAGE_Z - pupilForward,
+      );
+      meshes.pupils[e].scaling.setAll(1);
+      meshes.pupilMats[e].alpha = 1;
+    }
+  }
+}
+
+/** Set up the camera for the selection stage. Returns the saved gameplay camera state. */
+export function enterSelectionCamera(camera: FreeCamera): { pos: Vector3; target: Vector3 } {
+  const saved = { pos: camera.position.clone(), target: camera.getTarget() };
+  camera.position = STAGE_CAM_POS.clone();
+  camera.setTarget(STAGE_CAM_TARGET);
+  return saved;
+}
+
+export function restoreGameplayCamera(camera: FreeCamera, saved: { pos: Vector3; target: Vector3 }): void {
+  camera.position = saved.pos;
+  camera.setTarget(saved.target);
+}
+
+/** Hide arena meshes by name during selection. */
+export function setArenaMeshesVisible(scene: Scene, visible: boolean): void {
+  const names = [
+    'platform', 'dzTop', 'dzBot', 'dzLeft', 'dzRight',
+    'bTop', 'bBot', 'bLeft', 'bRight',
+  ];
+  for (const n of names) {
+    const m = scene.getMeshByName(n);
+    if (m) m.setEnabled(visible);
+  }
+}
+
+// --- 2D GUI ---
 
 export interface SelectionUI {
   ui: AdvancedDynamicTexture;
   panels: [PlayerSelectionPanel, PlayerSelectionPanel];
   cards: CardUI[];
-}
-
-interface PlayerAvatar {
-  root: Rectangle;
-  body: Ellipse;
-  leftHand: Ellipse;
-  rightHand: Ellipse;
-  leftEyeWhite: Ellipse;
-  rightEyeWhite: Ellipse;
-  leftPupil: Ellipse;
-  rightPupil: Ellipse;
+  stage: SelectionStage;
 }
 
 interface PlayerSelectionPanel {
   container: Rectangle;
-  avatar: PlayerAvatar;
   abilityLabel: TextBlock;
   abilityName: TextBlock;
   abilityDesc: TextBlock;
@@ -85,11 +250,12 @@ interface CardUI {
 
 export function createSelectionUI(scene: Scene): SelectionUI {
   const ui = AdvancedDynamicTexture.CreateFullscreenUI('selectionUI', true, scene);
+  const stage = createSelectionStage(scene);
 
-  // --- Top half: split preview panels ---
+  // --- Top half: transparent overlay with labels (3D shows through) ---
   const topContainer = new Rectangle('topContainer');
   topContainer.width = 1;
-  topContainer.height = '60%';
+  topContainer.height = '55%';
   topContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   topContainer.thickness = 0;
   topContainer.background = '#00000000';
@@ -109,29 +275,18 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   vsText.zIndex = 10;
   topContainer.addControl(vsText);
 
-  // Diagonal divider line (simulated with a thin rotated rect)
-  const divider = new Rectangle('divider');
-  divider.width = '6px';
-  divider.height = '120%';
-  divider.background = '#000000';
-  divider.thickness = 0;
-  divider.rotation = 0.15;
-  divider.zIndex = 5;
-  topContainer.addControl(divider);
-
   // --- Bottom half: card grid + controls ---
   const bottomContainer = new Rectangle('bottomContainer');
   bottomContainer.width = 1;
-  bottomContainer.height = '40%';
+  bottomContainer.height = '45%';
   bottomContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
   bottomContainer.thickness = 0;
-  bottomContainer.background = '#1a1a2e';
+  bottomContainer.background = '#111122ee';
   ui.addControl(bottomContainer);
 
-  // Card row
   const cardRow = new StackPanel('cardRow');
   cardRow.isVertical = false;
-  cardRow.height = '70%';
+  cardRow.height = '65%';
   cardRow.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   cardRow.top = '10px';
   bottomContainer.addControl(cardRow);
@@ -142,17 +297,16 @@ export function createSelectionUI(scene: Scene): SelectionUI {
     const key = isRandom ? 'random' : ABILITIES[i];
     const style = CARD_STYLES[key];
     const label = isRandom ? RANDOM_LABEL : ABILITY_INFO[ABILITIES[i]].name;
-    const card = createAbilityCard(cardRow, i, label, style);
-    cards.push(card);
+    cards.push(createAbilityCard(cardRow, i, label, style));
   }
 
   // Controls hint bar
   const controlsBar = new Rectangle('controlsBar');
   controlsBar.width = 1;
-  controlsBar.height = '30%';
+  controlsBar.height = '35%';
   controlsBar.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
   controlsBar.thickness = 0;
-  controlsBar.background = '#111122';
+  controlsBar.background = '#0a0a18';
   bottomContainer.addControl(controlsBar);
 
   const controlsLeft = new TextBlock('ctrlLeft', 'P1: A/D cycle, C/V select');
@@ -177,28 +331,27 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   controlsCenter.fontFamily = 'monospace';
   controlsBar.addControl(controlsCenter);
 
-  return { ui, panels: [p1Panel, p2Panel], cards };
+  return { ui, panels: [p1Panel, p2Panel], cards, stage };
 }
 
 function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPanel {
   const isP1 = idx === 0;
-  const bgColor = isP1 ? P1_BG : P2_BG;
   const playerColor = isP1 ? P1_COLOR : P2_COLOR;
 
+  // Transparent container — 3D renders behind it
   const container = new Rectangle(`previewPanel_${idx}`);
   container.width = '50%';
   container.height = 1;
   container.horizontalAlignment = isP1 ? Control.HORIZONTAL_ALIGNMENT_LEFT : Control.HORIZONTAL_ALIGNMENT_RIGHT;
   container.thickness = 0;
-  container.background = bgColor;
-  container.alpha = PANEL_BG_ALPHA;
+  container.background = '#00000000';
   parent.addControl(container);
 
   // Player tag (P1/P2 badge) — bottom corner
   const playerTag = new Rectangle(`playerTag_${idx}`);
   playerTag.width = '80px';
   playerTag.height = '40px';
-  playerTag.background = '#000000';
+  playerTag.background = '#000000cc';
   playerTag.thickness = 3;
   playerTag.color = playerColor;
   playerTag.cornerRadius = 4;
@@ -216,7 +369,7 @@ function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPane
   tagText.color = playerColor;
   playerTag.addControl(tagText);
 
-  // "ABILITY" header label — positioned at bottom, offset
+  // "ABILITY" header + ability name — bottom bar
   const abilityHeader = new Rectangle(`abilityHeader_${idx}`);
   abilityHeader.width = '260px';
   abilityHeader.height = '50px';
@@ -246,32 +399,32 @@ function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPane
   abilityName.top = '-4px';
   abilityHeader.addControl(abilityName);
 
-  // Player avatar
-  const avatar = createPlayerAvatar(container, idx);
-
-  // Description text — centered in panel
+  // Description text
   const abilityDesc = new TextBlock(`abilityDesc_${idx}`, '');
   abilityDesc.fontSize = 14;
   abilityDesc.fontFamily = 'monospace';
   abilityDesc.color = '#ffffffaa';
   abilityDesc.textWrapping = true;
+  abilityDesc.outlineWidth = 3;
+  abilityDesc.outlineColor = '#000000';
   abilityDesc.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-  abilityDesc.top = '-90px';
+  abilityDesc.top = '-85px';
   container.addControl(abilityDesc);
 
   // Status (READY!) text
   const statusText = new TextBlock(`statusText_${idx}`, '');
-  statusText.fontSize = 28;
+  statusText.fontSize = 32;
   statusText.fontFamily = 'monospace';
   statusText.fontWeight = 'bold';
   statusText.color = '#44ff44';
-  statusText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-  statusText.top = '20px';
+  statusText.outlineWidth = 3;
+  statusText.outlineColor = '#000000';
+  statusText.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+  statusText.top = '-10px';
   container.addControl(statusText);
 
   return {
     container,
-    avatar,
     abilityLabel,
     abilityName,
     abilityDesc,
@@ -283,97 +436,7 @@ function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPane
   };
 }
 
-function createPlayerAvatar(parent: Rectangle, idx: number): PlayerAvatar {
-  const isP1 = idx === 0;
-  const bodyColor = isP1 ? P1_BODY_HEX : P2_BODY_HEX;
-  const handColor = isP1 ? P1_HAND_HEX : P2_HAND_HEX;
-
-  // Root container for the whole avatar — centered in panel, offset up
-  const root = new Rectangle(`avatarRoot_${idx}`);
-  root.width = '200px';
-  root.height = '200px';
-  root.thickness = 0;
-  root.background = '#00000000';
-  root.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-  root.top = '-20px';
-  parent.addControl(root);
-
-  // Body
-  const body = new Ellipse(`avatarBody_${idx}`);
-  body.width = '90px';
-  body.height = '90px';
-  body.background = bodyColor;
-  body.thickness = 3;
-  body.color = '#00000044';
-  root.addControl(body);
-
-  // Left hand
-  const leftHand = new Ellipse(`avatarLH_${idx}`);
-  leftHand.width = '36px';
-  leftHand.height = '36px';
-  leftHand.background = handColor;
-  leftHand.thickness = 2;
-  leftHand.color = '#00000044';
-  leftHand.left = '-58px';
-  leftHand.top = '10px';
-  root.addControl(leftHand);
-
-  // Right hand
-  const rightHand = new Ellipse(`avatarRH_${idx}`);
-  rightHand.width = '36px';
-  rightHand.height = '36px';
-  rightHand.background = handColor;
-  rightHand.thickness = 2;
-  rightHand.color = '#00000044';
-  rightHand.left = '58px';
-  rightHand.top = '10px';
-  root.addControl(rightHand);
-
-  // Left eye white
-  const leftEyeWhite = new Ellipse(`avatarLEW_${idx}`);
-  leftEyeWhite.width = '20px';
-  leftEyeWhite.height = '20px';
-  leftEyeWhite.background = '#ffffff';
-  leftEyeWhite.thickness = 0;
-  leftEyeWhite.left = '-14px';
-  leftEyeWhite.top = '-8px';
-  root.addControl(leftEyeWhite);
-
-  // Left pupil
-  const leftPupil = new Ellipse(`avatarLP_${idx}`);
-  leftPupil.width = '10px';
-  leftPupil.height = '10px';
-  leftPupil.background = '#111111';
-  leftPupil.thickness = 0;
-  leftPupil.left = '-12px';
-  leftPupil.top = '-8px';
-  root.addControl(leftPupil);
-
-  // Right eye white
-  const rightEyeWhite = new Ellipse(`avatarREW_${idx}`);
-  rightEyeWhite.width = '20px';
-  rightEyeWhite.height = '20px';
-  rightEyeWhite.background = '#ffffff';
-  rightEyeWhite.thickness = 0;
-  rightEyeWhite.left = '14px';
-  rightEyeWhite.top = '-8px';
-  root.addControl(rightEyeWhite);
-
-  // Right pupil
-  const rightPupil = new Ellipse(`avatarRP_${idx}`);
-  rightPupil.width = '10px';
-  rightPupil.height = '10px';
-  rightPupil.background = '#111111';
-  rightPupil.thickness = 0;
-  rightPupil.left = '16px';
-  rightPupil.top = '-8px';
-  root.addControl(rightPupil);
-
-  return { root, body, leftHand, rightHand, leftEyeWhite, rightEyeWhite, leftPupil, rightPupil };
-}
-
 function createAbilityCard(parent: StackPanel, idx: number, label: string, style: { bg: string; border: string }): CardUI {
-  // Outer wrapper to add spacing
   const wrapper = new Rectangle(`cardWrapper_${idx}`);
   wrapper.width = '160px';
   wrapper.height = 1;
@@ -401,7 +464,6 @@ function createAbilityCard(parent: StackPanel, idx: number, label: string, style
   nameText.top = '-10px';
   rect.addControl(nameText);
 
-  // P1 cursor overlay
   const p1Cursor = new Rectangle(`p1Cursor_${idx}`);
   p1Cursor.width = 1;
   p1Cursor.height = 1;
@@ -413,7 +475,6 @@ function createAbilityCard(parent: StackPanel, idx: number, label: string, style
   p1Cursor.zIndex = 10;
   rect.addControl(p1Cursor);
 
-  // P2 cursor overlay
   const p2Cursor = new Rectangle(`p2Cursor_${idx}`);
   p2Cursor.width = '90%';
   p2Cursor.height = '90%';
@@ -427,6 +488,8 @@ function createAbilityCard(parent: StackPanel, idx: number, label: string, style
 
   return { rect, nameText, p1Cursor, p2Cursor };
 }
+
+// --- Input handling ---
 
 function confirmPanel(panel: PlayerSelectionPanel): void {
   panel.confirmed = true;
@@ -442,29 +505,15 @@ function unconfirmPanel(panel: PlayerSelectionPanel): void {
   panel.resolvedAbility = null;
 }
 
-// Gamepad stick tracking for selection cycling
 const prevStickX = [0, 0];
 const STICK_THRESHOLD = 0.5;
 
-export function updateSelection(selUI: SelectionUI, state: GameState, dt: number): boolean {
-  // Animate avatar bounce (sine for smooth ease-in/ease-out)
-  bounceTime += dt;
-  const bounceY = Math.sin(bounceTime * BOUNCE_SPEED * Math.PI * 2) * BOUNCE_AMPLITUDE;
-  for (let i = 0; i < 2; i++) {
-    const avatar = selUI.panels[i].avatar;
-    avatar.root.top = `${-20 + bounceY}px`;
-    // Hands bob slightly out of phase for a lively feel
-    const handBounce = Math.sin((bounceTime * BOUNCE_SPEED * Math.PI * 2) + 0.8) * BOUNCE_AMPLITUDE * 0.6;
-    avatar.leftHand.top = `${10 + handBounce}px`;
-    avatar.rightHand.top = `${10 + handBounce}px`;
-  }
-
+export function updateSelection(selUI: SelectionUI, state: GameState): boolean {
   // P1 controls: A/D cycle, C/V confirm, Escape unconfirm
   handlePlayerSelection(selUI.panels[0], 'KeyA', 'KeyD', 'KeyC', 'KeyV', 'Escape');
   // P2 controls: K/; cycle, ArrowLeft/ArrowRight confirm, Backspace unconfirm
   handlePlayerSelection(selUI.panels[1], 'KeyK', 'Semicolon', 'ArrowLeft', 'ArrowRight', 'Backspace');
 
-  // Gamepad selection
   handleGamepadSelection(selUI.panels[0], 0);
   handleGamepadSelection(selUI.panels[1], 1);
 
@@ -474,7 +523,6 @@ export function updateSelection(selUI: SelectionUI, state: GameState, dt: number
     card.p1Cursor.isVisible = selUI.panels[0].selectedIndex === i;
     card.p2Cursor.isVisible = selUI.panels[1].selectedIndex === i;
 
-    // Confirmed highlight: thicker border + brighter bg
     const isRandom = i >= ABILITIES.length;
     const key = isRandom ? 'random' : ABILITIES[i];
     const style = CARD_STYLES[key];
@@ -515,7 +563,7 @@ export function updateSelection(selUI: SelectionUI, state: GameState, dt: number
     }
   }
 
-  // Update state selections (use resolvedAbility to avoid re-rolling random)
+  // Update state selections
   for (let i = 0; i < 2; i++) {
     const panel = selUI.panels[i];
     if (panel.confirmed) {
@@ -559,7 +607,6 @@ function handleGamepadSelection(panel: PlayerSelectionPanel, padIdx: number): vo
   const gp = gamepads[padIdx];
   if (!gp) return;
 
-  // B button (index 1) to unconfirm
   if (panel.confirmed) {
     if (gp.buttons[1]?.pressed) {
       unconfirmPanel(panel);
@@ -570,7 +617,6 @@ function handleGamepadSelection(panel: PlayerSelectionPanel, padIdx: number): vo
 
   const sx = gp.axes[0] ?? 0;
 
-  // Edge-detect stick left/right
   if (sx < -STICK_THRESHOLD && prevStickX[padIdx] >= -STICK_THRESHOLD) {
     panel.selectedIndex = (panel.selectedIndex - 1 + CARD_COUNT) % CARD_COUNT;
   }
@@ -579,8 +625,6 @@ function handleGamepadSelection(panel: PlayerSelectionPanel, padIdx: number): vo
   }
   prevStickX[padIdx] = sx;
 
-  // X button (index 2) to confirm
-
   if (gp.buttons[2]?.pressed) {
     confirmPanel(panel);
   }
@@ -588,9 +632,11 @@ function handleGamepadSelection(panel: PlayerSelectionPanel, padIdx: number): vo
 
 export function destroySelectionUI(selUI: SelectionUI): void {
   selUI.ui.dispose();
+  disposeSelectionStage(selUI.stage);
 }
 
 export function resetSelection(selUI: SelectionUI): void {
+  bounceTime = 0;
   for (const panel of selUI.panels) {
     panel.selectedIndex = 0;
     unconfirmPanel(panel);

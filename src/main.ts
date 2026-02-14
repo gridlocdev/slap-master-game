@@ -9,16 +9,21 @@ import {
 } from './input.ts';
 import { createInitialState, createSelectionState } from './state/gameState.ts';
 import { updateGame } from './game.ts';
-import { createSelectionUI, updateSelection, destroySelectionUI } from './ui/selection.ts';
+import {
+  createSelectionUI, updateSelection, destroySelectionUI,
+  enterSelectionCamera, restoreGameplayCamera,
+  setArenaMeshesVisible, updateSelectionMeshes,
+} from './ui/selection.ts';
 import { P1_KEYS, P2_KEYS, RESTART_DELAY } from './constants.ts';
 import type { AbilityType } from './types.ts';
+import type { Vector3 } from '@babylonjs/core';
 
 const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
-const { engine, scene } = createScene(canvas);
+const { engine, scene, camera } = createScene(canvas);
 
 createArenaMeshes(scene);
 
-let playerMeshes = [
+const playerMeshes = [
   createPlayerMeshes(scene, 0),
   createPlayerMeshes(scene, 1),
 ] as const;
@@ -29,19 +34,25 @@ const effectsPool = createEffectsPool(scene);
 let state = createSelectionState();
 let selectionUI = createSelectionUI(scene);
 let gamePhase: 'selecting' | 'playing' = 'selecting';
+let savedCamera: { pos: Vector3; target: Vector3 } | null = null;
 
-// Hide gameplay HUD and player meshes during selection
+// Enter selection mode
 setHudVisible(hud, false);
-setPlayerMeshesVisible(playerMeshes[0], false);
-setPlayerMeshesVisible(playerMeshes[1], false);
+setArenaMeshesVisible(scene, false);
+savedCamera = enterSelectionCamera(camera);
+setPlayerMeshesVisible(playerMeshes[0], true);
+setPlayerMeshesVisible(playerMeshes[1], true);
 
 function startGame(p1Ability: AbilityType, p2Ability: AbilityType): void {
   state = createInitialState(p1Ability, p2Ability);
   gamePhase = 'playing';
   destroySelectionUI(selectionUI);
   setHudVisible(hud, true);
-  setPlayerMeshesVisible(playerMeshes[0], true);
-  setPlayerMeshesVisible(playerMeshes[1], true);
+  setArenaMeshesVisible(scene, true);
+  if (savedCamera) {
+    restoreGameplayCamera(camera, savedCamera);
+    savedCamera = null;
+  }
 }
 
 function goToSelection(): void {
@@ -49,8 +60,10 @@ function goToSelection(): void {
   gamePhase = 'selecting';
   selectionUI = createSelectionUI(scene);
   setHudVisible(hud, false);
-  setPlayerMeshesVisible(playerMeshes[0], false);
-  setPlayerMeshesVisible(playerMeshes[1], false);
+  setArenaMeshesVisible(scene, false);
+  savedCamera = enterSelectionCamera(camera);
+  setPlayerMeshesVisible(playerMeshes[0], true);
+  setPlayerMeshesVisible(playerMeshes[1], true);
 }
 
 engine.runRenderLoop(() => {
@@ -58,7 +71,8 @@ engine.runRenderLoop(() => {
   pollGamepads();
 
   if (gamePhase === 'selecting') {
-    const bothReady = updateSelection(selectionUI, state, dt);
+    const bothReady = updateSelection(selectionUI, state);
+    updateSelectionMeshes(playerMeshes, dt);
     if (bothReady) {
       const p1Ability = state.selections[0]!;
       const p2Ability = state.selections[1]!;
