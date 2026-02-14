@@ -13,6 +13,7 @@ import {
   createSelectionUI, updateSelection, destroySelectionUI,
   enterSelectionCamera, restoreGameplayCamera,
   setArenaMeshesVisible, updateSelectionMeshes,
+  getHoveredAbilities,
 } from './ui/selection.ts';
 import { P1_KEYS, P2_KEYS, RESTART_DELAY } from './constants.ts';
 import type { AbilityType } from './types.ts';
@@ -35,6 +36,7 @@ let state = createSelectionState();
 let selectionUI = createSelectionUI(scene);
 let gamePhase: 'selecting' | 'playing' = 'selecting';
 let savedCamera: { pos: Vector3; target: Vector3 } | null = null;
+let scoreApplied = false; // track whether we've already credited the round win
 
 // Enter selection mode
 setHudVisible(hud, false);
@@ -43,8 +45,9 @@ savedCamera = enterSelectionCamera(camera);
 setPlayerMeshesVisible(playerMeshes[0], true);
 setPlayerMeshesVisible(playerMeshes[1], true);
 
-function startGame(p1Ability: AbilityType, p2Ability: AbilityType): void {
-  state = createInitialState(p1Ability, p2Ability);
+function startGame(p1Ability: AbilityType, p2Ability: AbilityType, scores: [number, number] = [0, 0]): void {
+  state = createInitialState(p1Ability, p2Ability, scores);
+  scoreApplied = false;
   gamePhase = 'playing';
   destroySelectionUI(selectionUI);
   setHudVisible(hud, true);
@@ -53,6 +56,14 @@ function startGame(p1Ability: AbilityType, p2Ability: AbilityType): void {
     restoreGameplayCamera(camera, savedCamera);
     savedCamera = null;
   }
+}
+
+function startNextRound(): void {
+  const p1Ability = state.players[0].ability;
+  const p2Ability = state.players[1].ability;
+  const scores = state.scores;
+  state = createInitialState(p1Ability, p2Ability, scores);
+  scoreApplied = false;
 }
 
 function goToSelection(): void {
@@ -72,7 +83,7 @@ engine.runRenderLoop(() => {
 
   if (gamePhase === 'selecting') {
     const bothReady = updateSelection(selectionUI, state);
-    updateSelectionMeshes(playerMeshes, dt);
+    updateSelectionMeshes(playerMeshes, dt, getHoveredAbilities(selectionUI));
     if (bothReady) {
       const p1Ability = state.selections[0]!;
       const p2Ability = state.selections[1]!;
@@ -91,17 +102,30 @@ engine.runRenderLoop(() => {
     if (gp2) p2Input = mergeInput(p2Input, gp2);
 
     if (state.winner !== null) {
+      // Credit round win once
+      if (!scoreApplied) {
+        state.scores[state.winner]++;
+        scoreApplied = true;
+      }
+
       state.restartTimer += dt;
       const canRestart = state.restartTimer > RESTART_DELAY;
-      if (canRestart && (isKeyJustPressed('Space') || isGamepadRestart(0) || isGamepadRestart(1))) {
-        goToSelection();
+      const restartPressed = isKeyJustPressed('Space') || isGamepadRestart(0) || isGamepadRestart(1);
+
+      if (canRestart && restartPressed) {
+        const setWon = state.scores[state.winner] >= state.roundsToWin;
+        if (setWon) {
+          goToSelection();
+        } else {
+          startNextRound();
+        }
       }
     } else {
       updateGame(state, p1Input, p2Input, dt);
     }
 
-    updatePlayerMeshes(playerMeshes[0], state.players[0], 0);
-    updatePlayerMeshes(playerMeshes[1], state.players[1], 1);
+    updatePlayerMeshes(playerMeshes[0], state.players[0], 0, dt);
+    updatePlayerMeshes(playerMeshes[1], state.players[1], 1, dt);
     updateHud(hud, state);
     updateEffects(effectsPool, state);
   }

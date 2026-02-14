@@ -43,6 +43,8 @@ function createPlayer(x: number, y: number, ability: AbilityType): PlayerState {
 export function createInitialState(
   p1Ability: AbilityType = 'burrito',
   p2Ability: AbilityType = 'burrito',
+  scores: [number, number] = [0, 0],
+  roundsToWin = 2,
 ): GameState {
   return {
     players: [
@@ -57,11 +59,13 @@ export function createInitialState(
     juiceMarks: [],
     phase: 'playing',
     selections: [null, null],
+    scores,
+    roundsToWin,
   };
 }
 
-export function createSelectionState(): GameState {
-  const state = createInitialState();
+export function createSelectionState(roundsToWin = 2): GameState {
+  const state = createInitialState('burrito', 'burrito', [0, 0], roundsToWin);
   state.phase = 'selecting';
   state.selections = [null, null];
   return state;

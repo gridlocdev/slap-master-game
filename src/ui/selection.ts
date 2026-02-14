@@ -10,11 +10,13 @@ import {
 import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, StackPanel } from '@babylonjs/gui';
 import type { AbilityType, GameState } from '../types.ts';
 import type { PlayerMeshes } from '../objects/player.ts';
+import { applyAbilityVisual } from '../objects/player.ts';
 import { isKeyJustPressed } from '../input.ts';
 import {
   PLAYER_RADIUS, HAND_RADIUS, HAND_OFFSET,
   P1_BODY_COLOR, P1_HAND_COLOR,
   P2_BODY_COLOR, P2_HAND_COLOR,
+  CHILD_SCALE, MELON_BODY_Y_SCALE,
 } from '../constants.ts';
 
 const ABILITIES: AbilityType[] = ['burrito', 'child', 'melon'];
@@ -130,10 +132,24 @@ export function disposeSelectionStage(stage: SelectionStage): void {
   stage.floor.dispose();
 }
 
+/** Get the hovered ability for each player from the selection panels. */
+export function getHoveredAbilities(selUI: SelectionUI): [AbilityType | null, AbilityType | null] {
+  const result: [AbilityType | null, AbilityType | null] = [null, null];
+  for (let i = 0; i < 2; i++) {
+    const panel = selUI.panels[i];
+    if (panel.selectedIndex < ABILITIES.length) {
+      result[i] = ABILITIES[panel.selectedIndex];
+    }
+    // null means RANDOM
+  }
+  return result;
+}
+
 /** Position the player meshes on the selection stage facing the camera, with bounce. */
 export function updateSelectionMeshes(
   playerMeshes: readonly [PlayerMeshes, PlayerMeshes],
   dt: number,
+  hoveredAbilities: [AbilityType | null, AbilityType | null],
 ): void {
   bounceTime += dt;
   const bounce = Math.sin(bounceTime * BOUNCE_SPEED * Math.PI * 2) * BOUNCE_AMPLITUDE;
@@ -143,32 +159,51 @@ export function updateSelectionMeshes(
   for (let idx = 0; idx < 2; idx++) {
     const meshes = playerMeshes[idx];
     const stageX = idx === 0 ? P1_STAGE_X : P2_STAGE_X;
-    const bodyY = PLAYER_STAGE_Y + PLAYER_RADIUS + bounce;
+    const hovered = hoveredAbilities[idx];
+    const scale = hovered === 'child' ? CHILD_SCALE : 1;
+    const bodyY = PLAYER_STAGE_Y + PLAYER_RADIUS * scale + bounce;
+
+    // Apply ability visual (headband/melon/question/normal)
+    const visualKey = hovered ?? 'random';
+    applyAbilityVisual(meshes, visualKey, idx, scale);
 
     // Body
     meshes.body.position.set(stageX, bodyY, PLAYER_STAGE_Z);
-    meshes.body.scaling.setAll(1);
+    meshes.body.scaling.setAll(scale);
     const bodyColor = idx === 0 ? P1_BODY_COLOR : P2_BODY_COLOR;
     meshes.bodyMat.emissiveColor = new Color3(...bodyColor);
     meshes.bodyMat.alpha = 1;
 
+    // Melon body position + oblong scale
+    if (hovered === 'melon') {
+      meshes.melonBodyMesh.position.set(stageX, bodyY, PLAYER_STAGE_Z);
+      meshes.melonBodyMesh.scaling.set(scale, scale * MELON_BODY_Y_SCALE, scale);
+      meshes.melonBodyMat.alpha = 1;
+    }
+
+    // Question disc position — faces +Z by default, camera is at -Z looking toward +Z
+    if (hovered === null) {
+      meshes.questionDisc.position.set(stageX, bodyY, PLAYER_STAGE_Z - PLAYER_RADIUS * 0.01);
+      meshes.questionDiscMat.alpha = 1;
+    }
+
     // Hands — at sides, facing camera (spread along X)
     const handColor = idx === 0 ? P1_HAND_COLOR : P2_HAND_COLOR;
-    const handY = PLAYER_STAGE_Y + HAND_RADIUS + handBounce;
+    const handY = PLAYER_STAGE_Y + HAND_RADIUS * scale + handBounce;
     for (let h = 0; h < 2; h++) {
       const sign = h === 0 ? -1 : 1;
       meshes.hands[h].position.set(
-        stageX + sign * HAND_OFFSET,
+        stageX + sign * HAND_OFFSET * scale,
         handY,
         PLAYER_STAGE_Z,
       );
-      meshes.hands[h].scaling.setAll(1);
+      meshes.hands[h].scaling.setAll(scale);
       meshes.handMats[h].emissiveColor = new Color3(...handColor);
       meshes.handMats[h].alpha = 1;
     }
 
     // Eyes — facing camera (toward -Z)
-    const r = PLAYER_RADIUS;
+    const r = PLAYER_RADIUS * scale;
     const eyeDist = r * 0.4;
     const eyeForward = r * 0.85;
     const eyeY = bodyY + r * 0.2;
@@ -181,7 +216,7 @@ export function updateSelectionMeshes(
         eyeY,
         PLAYER_STAGE_Z - eyeForward,
       );
-      meshes.eyeWhites[e].scaling.setAll(1);
+      meshes.eyeWhites[e].scaling.setAll(scale);
       meshes.eyeWhiteMats[e].alpha = 1;
 
       const pupilForward = eyeForward + r * 0.08;
@@ -190,8 +225,61 @@ export function updateSelectionMeshes(
         eyeY,
         PLAYER_STAGE_Z - pupilForward,
       );
-      meshes.pupils[e].scaling.setAll(1);
+      meshes.pupils[e].scaling.setAll(scale);
       meshes.pupilMats[e].alpha = 1;
+    }
+
+    // Hide eyes/pupils/hands for random (question disc replaces body)
+    if (hovered === null) {
+      for (const h of meshes.hands) h.setEnabled(false);
+      for (const e of meshes.eyeWhites) e.setEnabled(false);
+      for (const p of meshes.pupils) p.setEnabled(false);
+    }
+
+    // Headband physics in selection screen (face toward -Z / camera)
+    if (hovered === 'burrito') {
+      updateSelectionHeadband(meshes, stageX, bodyY, PLAYER_STAGE_Z, -Math.PI / 2, dt);
+    }
+  }
+}
+
+/** Simplified headband positioning for the selection screen (no fast movement). */
+function updateSelectionHeadband(
+  meshes: PlayerMeshes,
+  anchorX: number, anchorY: number, anchorZ: number,
+  facingAngle: number, _dt: number,
+): void {
+  const backX = -Math.cos(facingAngle);
+  const backZ = -Math.sin(facingAngle);
+
+  const bandY = anchorY + PLAYER_RADIUS * 0.65;
+  meshes.headbandBand.position.set(anchorX, bandY, anchorZ);
+  meshes.headbandBand.rotation.x = 0;
+  meshes.headbandBand.rotation.y = 0;
+
+  const knotDist = PLAYER_RADIUS * 0.8;
+  const knotX = anchorX + backX * knotDist;
+  const knotZ = anchorZ + backZ * knotDist;
+  meshes.headbandKnot.position.set(knotX, bandY, knotZ);
+
+  // Static tail positions (gentle drape) for selection screen
+  const splayAngles = [-0.3, 0.3];
+  for (let t = 0; t < 2; t++) {
+    const tails = t === 0 ? meshes.headbandTailsL : meshes.headbandTailsR;
+    const splay = splayAngles[t];
+    const tailDirX = backX * Math.cos(splay) - backZ * Math.sin(splay);
+    const tailDirZ = backX * Math.sin(splay) + backZ * Math.cos(splay);
+
+    for (let s = 0; s < tails.length; s++) {
+      const dist = (s + 1) * 0.12;
+      const droop = s * s * 0.02; // gentle gravity droop
+      tails[s].position.set(
+        knotX + tailDirX * dist,
+        bandY - droop,
+        knotZ + tailDirZ * dist,
+      );
+      tails[s].rotation.y = Math.atan2(tailDirX, tailDirZ);
+      tails[s].rotation.x = Math.atan2(droop, 0.12);
     }
   }
 }
@@ -275,6 +363,25 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   vsText.outlineColor = '#000000';
   vsText.zIndex = 10;
   topContainer.addControl(vsText);
+
+  // Bo3 label — top center
+  const bo3Rect = new Rectangle('bo3Rect');
+  bo3Rect.width = '80px';
+  bo3Rect.height = '32px';
+  bo3Rect.background = '#000000';
+  bo3Rect.thickness = 0;
+  bo3Rect.cornerRadius = 4;
+  bo3Rect.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+  bo3Rect.top = '10px';
+  bo3Rect.zIndex = 15;
+  ui.addControl(bo3Rect);
+
+  const bo3Text = new TextBlock('bo3Text', 'Bo3');
+  bo3Text.fontSize = 18;
+  bo3Text.fontFamily = 'monospace';
+  bo3Text.fontWeight = 'bold';
+  bo3Text.color = '#ffffff';
+  bo3Rect.addControl(bo3Text);
 
   // --- Bottom half: card grid + controls ---
   const bottomContainer = new Rectangle('bottomContainer');

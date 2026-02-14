@@ -6,6 +6,7 @@ export interface HudElements {
   ui: AdvancedDynamicTexture;
   winText: TextBlock;
   restartText: TextBlock;
+  scoreText: TextBlock;
   p1Label: TextBlock;
   p2Label: TextBlock;
   controlsText: TextBlock;
@@ -30,13 +31,21 @@ export function createHud(scene: Scene): HudElements {
   winText.isVisible = false;
   ui.addControl(winText);
 
-  const restartText = new TextBlock('restartText', 'Press SPACE to restart');
+  const restartText = new TextBlock('restartText', '');
   restartText.fontSize = 20;
   restartText.color = '#aaaaaa';
   restartText.fontFamily = 'monospace';
   restartText.top = '20px';
   restartText.isVisible = false;
   ui.addControl(restartText);
+
+  const scoreText = new TextBlock('scoreText', '');
+  scoreText.fontSize = 18;
+  scoreText.color = '#ffffff';
+  scoreText.fontFamily = 'monospace';
+  scoreText.top = '55px';
+  scoreText.isVisible = false;
+  ui.addControl(scoreText);
 
   const p1Label = new TextBlock('p1Label', 'P1: WASD + C/V + E');
   p1Label.fontSize = 14;
@@ -86,18 +95,31 @@ export function createHud(scene: Scene): HudElements {
   controlsText.top = '-15px';
   ui.addControl(controlsText);
 
-  return { ui, winText, restartText, p1Label, p2Label, controlsText, p1Cooldown, p2Cooldown };
+  return { ui, winText, restartText, scoreText, p1Label, p2Label, controlsText, p1Cooldown, p2Cooldown };
 }
 
 export function updateHud(hud: HudElements, state: GameState): void {
   if (state.winner !== null) {
-    hud.winText.text = `Player ${state.winner + 1} wins!`;
-    hud.winText.color = state.winner === 0 ? '#4488ff' : '#ff4444';
+    const setWon = state.scores[state.winner] >= state.roundsToWin;
+    const pNum = state.winner + 1;
+    const color = state.winner === 0 ? '#4488ff' : '#ff4444';
+
+    if (setWon) {
+      hud.winText.text = `Player ${pNum} wins the set!`;
+      hud.restartText.text = 'Press SPACE for new set';
+    } else {
+      hud.winText.text = `Player ${pNum} wins the round!`;
+      hud.restartText.text = 'Press SPACE for next round';
+    }
+    hud.winText.color = color;
     hud.winText.isVisible = true;
     hud.restartText.isVisible = true;
+    hud.scoreText.text = `P1 ${state.scores[0]} - ${state.scores[1]} P2`;
+    hud.scoreText.isVisible = true;
   } else {
     hud.winText.isVisible = false;
     hud.restartText.isVisible = false;
+    hud.scoreText.isVisible = false;
   }
 
   // Cooldown display
@@ -122,4 +144,5 @@ export function setHudVisible(hud: HudElements, visible: boolean): void {
   hud.controlsText.isVisible = visible;
   hud.winText.isVisible = false;
   hud.restartText.isVisible = false;
+  hud.scoreText.isVisible = false;
 }

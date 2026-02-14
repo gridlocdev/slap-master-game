@@ -8,9 +8,11 @@ import {
 import type { GameState } from '../types.ts';
 import {
   STINK_CLOUD_RADIUS, STINK_CLOUD_COLOR, STINK_CLOUD_DURATION,
-  MELON_RADIUS, MELON_COLOR,
+  MELON_RADIUS,
   JUICE_MARK_COLOR, JUICE_MARK_DURATION,
+  MELON_BODY_Y_SCALE,
 } from '../constants.ts';
+import { getSharedMelonMaterial } from './player.ts';
 
 const MAX_CLOUDS = 8;
 const MAX_MELONS = 8;
@@ -45,18 +47,16 @@ export function createEffectsPool(scene: Scene): EffectsPool {
 
   const melons: Mesh[] = [];
   const melonMats: StandardMaterial[] = [];
+  const sharedMelonMat = getSharedMelonMaterial(scene);
   for (let i = 0; i < MAX_MELONS; i++) {
     const mesh = MeshBuilder.CreateSphere(`melon_${i}`, {
       diameter: MELON_RADIUS * 2,
       segments: 10,
     }, scene);
-    const mat = new StandardMaterial(`melonMat_${i}`, scene);
-    mat.emissiveColor = new Color3(...MELON_COLOR);
-    mat.disableLighting = true;
-    mesh.material = mat;
+    mesh.material = sharedMelonMat;
     mesh.setEnabled(false);
     melons.push(mesh);
-    melonMats.push(mat);
+    melonMats.push(sharedMelonMat);
   }
 
   const juiceMarks: Mesh[] = [];
@@ -95,12 +95,13 @@ export function updateEffects(pool: EffectsPool, state: GameState): void {
     }
   }
 
-  // Melons
+  // Melons (oblong shape)
   for (let i = 0; i < pool.melons.length; i++) {
     if (i < state.melons.length) {
       const melon = state.melons[i];
       pool.melons[i].setEnabled(true);
       pool.melons[i].position.set(melon.pos.x, MELON_RADIUS, melon.pos.y);
+      pool.melons[i].scaling.set(1, MELON_BODY_Y_SCALE, 1);
     } else {
       pool.melons[i].setEnabled(false);
     }

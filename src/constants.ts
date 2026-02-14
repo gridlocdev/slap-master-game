@@ -97,3 +97,9 @@ export const RESTART_DELAY = 0.5; // seconds
 // Fall animation
 export const FALL_DURATION = 0.5;
 export const FALL_GRAVITY = 20;
+
+// Character visuals
+export const HEADBAND_SEGMENTS = 5;
+export const HEADBAND_SEG_LENGTH = 0.12;
+export const HEADBAND_DAMPING = 0.92;
+export const MELON_BODY_Y_SCALE = 1.15;

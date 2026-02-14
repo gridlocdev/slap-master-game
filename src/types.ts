@@ -72,6 +72,8 @@ export interface GameState {
   juiceMarks: JuiceMark[];
   phase: 'selecting' | 'playing';
   selections: [AbilityType | null, AbilityType | null];
+  scores: [number, number];
+  roundsToWin: number;
 }
 
 export interface PlayerInput {
