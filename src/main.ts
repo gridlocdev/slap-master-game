@@ -15,6 +15,8 @@ import {
   setArenaMeshesVisible, updateSelectionMeshes,
   getHoveredAbilities,
 } from './ui/selection.ts';
+import { createCountdownUI, updateCountdown, destroyCountdown } from './ui/countdown.ts';
+import type { CountdownUI } from './ui/countdown.ts';
 import { P1_KEYS, P2_KEYS, RESTART_DELAY } from './constants.ts';
 import type { AbilityType } from './types.ts';
 import type { Vector3 } from '@babylonjs/core';
@@ -34,9 +36,10 @@ const effectsPool = createEffectsPool(scene);
 
 let state = createSelectionState();
 let selectionUI = createSelectionUI(scene);
-let gamePhase: 'selecting' | 'playing' = 'selecting';
+let gamePhase: 'selecting' | 'countdown' | 'playing' = 'selecting';
 let savedCamera: { pos: Vector3; target: Vector3 } | null = null;
 let scoreApplied = false; // track whether we've already credited the round win
+let countdownUI: CountdownUI | null = null;
 
 // Enter selection mode
 setHudVisible(hud, false);
@@ -48,9 +51,10 @@ setPlayerMeshesVisible(playerMeshes[1], true);
 function startGame(p1Ability: AbilityType, p2Ability: AbilityType, scores: [number, number] = [0, 0]): void {
   state = createInitialState(p1Ability, p2Ability, scores);
   scoreApplied = false;
-  gamePhase = 'playing';
+  gamePhase = 'countdown';
+  countdownUI = createCountdownUI(scene);
   destroySelectionUI(selectionUI);
-  setHudVisible(hud, true);
+  setHudVisible(hud, false);
   setArenaMeshesVisible(scene, true);
   if (savedCamera) {
     restoreGameplayCamera(camera, savedCamera);
@@ -64,6 +68,9 @@ function startNextRound(): void {
   const scores = state.scores;
   state = createInitialState(p1Ability, p2Ability, scores);
   scoreApplied = false;
+  gamePhase = 'countdown';
+  countdownUI = createCountdownUI(scene);
+  setHudVisible(hud, false);
 }
 
 function goToSelection(): void {
@@ -89,6 +96,17 @@ engine.runRenderLoop(() => {
       const p2Ability = state.selections[1]!;
       startGame(p1Ability, p2Ability);
     }
+
+  } else if (gamePhase === 'countdown') {
+    if (countdownUI && updateCountdown(countdownUI, dt)) {
+      destroyCountdown(countdownUI);
+      countdownUI = null;
+      gamePhase = 'playing';
+      setHudVisible(hud, true);
+    }
+    // Show players in their starting positions during countdown
+    updatePlayerMeshes(playerMeshes[0], state.players[0], 0, dt);
+    updatePlayerMeshes(playerMeshes[1], state.players[1], 1, dt);
 
   } else {
     // Keyboard input

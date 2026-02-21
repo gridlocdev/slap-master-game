@@ -98,6 +98,12 @@ export const RESTART_DELAY = 0.5; // seconds
 export const FALL_DURATION = 0.5;
 export const FALL_GRAVITY = 20;
 
+// Countdown animation
+export const COUNTDOWN_STEPS = ['3', '2', '1', 'TIME TO SLAP!!!'] as const;
+export const COUNTDOWN_ZOOM_IN_TIME = 0.25;
+export const COUNTDOWN_STEP_DURATION = 0.75;
+export const COUNTDOWN_HOLD_TIME = 0.5; // extra hold on final step
+
 // Character visuals
 export const HEADBAND_SEGMENTS = 5;
 export const HEADBAND_SEG_LENGTH = 0.12;
