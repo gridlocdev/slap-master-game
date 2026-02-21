@@ -1,5 +1,5 @@
 import type { PlayerInput } from './types.ts';
-import { STICK_DEADZONE, TRIGGER_THRESHOLD } from './constants.ts';
+import { STICK_DEADZONE, TRIGGER_THRESHOLD, GAMEPAD_SELECT_BUTTON } from './constants.ts';
 
 // --- Keyboard ---
 
@@ -61,12 +61,16 @@ const prevButtonX = new Map<number, boolean>();
 // Also track A/Start for restart
 const buttonJustA = new Set<number>();
 const prevButtonA = new Map<number, boolean>();
+// Select button (index 8) for input assignment overlay
+const buttonJustSelect = new Set<number>();
+const prevButtonSelect = new Map<number, boolean>();
 
 export function pollGamepads(): void {
   triggerJustLeft.clear();
   triggerJustRight.clear();
   buttonJustX.clear();
   buttonJustA.clear();
+  buttonJustSelect.clear();
 
   const gamepads = navigator.getGamepads();
   for (let i = 0; i < gamepads.length; i++) {
@@ -93,6 +97,11 @@ export function pollGamepads(): void {
     const aDown = gp.buttons[0]?.pressed ?? false;
     if (aDown && !prevButtonA.get(i)) buttonJustA.add(i);
     prevButtonA.set(i, aDown);
+
+    // Select button for input assignment overlay
+    const selDown = gp.buttons[GAMEPAD_SELECT_BUTTON]?.pressed ?? false;
+    if (selDown && !prevButtonSelect.get(i)) buttonJustSelect.add(i);
+    prevButtonSelect.set(i, selDown);
   }
 }
 
@@ -132,6 +141,14 @@ export function readGamepadInput(padIndex: number, facingAngle: number): PlayerI
 
 export function isGamepadRestart(padIndex: number): boolean {
   return buttonJustA.has(padIndex);
+}
+
+export function isGamepadSelectJustPressed(padIndex: number): boolean {
+  return buttonJustSelect.has(padIndex);
+}
+
+export function isAnyGamepadSelectJustPressed(): boolean {
+  return buttonJustSelect.size > 0;
 }
 
 export function mergeInput(a: PlayerInput, b: PlayerInput): PlayerInput {

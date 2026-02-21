@@ -217,3 +217,14 @@ export const DIVIDER_WIDTH = 0.08;
 export const SELECTION_FLOOR_W = 14;
 export const SELECTION_FLOOR_D = 8;
 export const SELECTION_FLOOR_COLOR: Color3Tuple = [0.12, 0.12, 0.2];
+
+// Input assignment overlay
+export const GAMEPAD_SELECT_BUTTON = 8;
+export const INPUT_ASSIGN_BG = '#000000dd';
+export const INPUT_ASSIGN_PANEL_W = '280px';
+export const INPUT_ASSIGN_PANEL_H = '220px';
+export const INPUT_ASSIGN_ICON_SIZE = 64;
+export const INPUT_ASSIGN_LABEL_SIZE = 28;
+export const INPUT_ASSIGN_READY_COLOR = '#4488ff';
+export const INPUT_ASSIGN_GAP = '60px';
+export const INPUT_ASSIGN_STICK_THRESHOLD = 0.5;

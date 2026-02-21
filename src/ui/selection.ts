@@ -11,7 +11,12 @@ import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, StackPanel } fro
 import type { AbilityType, GameState } from '../types.ts';
 import type { PlayerMeshes } from '../objects/player.ts';
 import { applyAbilityVisual } from '../objects/player.ts';
-import { isKeyJustPressed } from '../input.ts';
+import { isKeyJustPressed, isAnyGamepadSelectJustPressed } from '../input.ts';
+import {
+  createInputAssignUI, updateInputAssignUI, destroyInputAssignUI,
+  getP1GamepadIndex, getP2GamepadIndex,
+} from './inputAssign.ts';
+import type { InputAssignUI } from './inputAssign.ts';
 import {
   PLAYER_RADIUS, HAND_RADIUS, HAND_OFFSET,
   P1_BODY_COLOR, P1_HAND_COLOR,
@@ -327,6 +332,7 @@ export interface SelectionUI {
   stage: SelectionStage;
   p1Cursor: Rectangle;
   p2Cursor: Rectangle;
+  inputAssignUI: InputAssignUI | null;
 }
 
 interface PlayerSelectionPanel {
@@ -442,7 +448,7 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   controlsRight.left = '-20px';
   controlsBar.addControl(controlsRight);
 
-  const controlsCenter = new TextBlock('ctrlCenter', 'Gamepad: Stick cycle, X select, B back');
+  const controlsCenter = new TextBlock('ctrlCenter', '` / Select = Input Setup  ·  Gamepad: Stick cycle, X select, B back');
   controlsCenter.fontSize = 14;
   controlsCenter.color = '#8888aa';
   controlsCenter.fontFamily = 'monospace';
@@ -452,7 +458,7 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   const p1Cursor = createPlayerCursor(ui, 'P1', P1_HUD_COLOR, CURSOR_P1_OFFSET);
   const p2Cursor = createPlayerCursor(ui, 'P2', P2_HUD_COLOR, CURSOR_P2_OFFSET);
 
-  return { ui, panels: [p1Panel, p2Panel], cards, stage, p1Cursor, p2Cursor };
+  return { ui, panels: [p1Panel, p2Panel], cards, stage, p1Cursor, p2Cursor, inputAssignUI: null };
 }
 
 function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPanel {
@@ -670,13 +676,31 @@ function unconfirmPanel(panel: PlayerSelectionPanel): void {
 const prevStickX = [0, 0];
 
 export function updateSelection(selUI: SelectionUI, state: GameState): boolean {
+  // Input assignment overlay
+  if (selUI.inputAssignUI) {
+    if (updateInputAssignUI(selUI.inputAssignUI)) {
+      destroyInputAssignUI(selUI.inputAssignUI);
+      selUI.inputAssignUI = null;
+    }
+    return false;
+  }
+
+  // Open overlay on Backquote or any gamepad Select
+  if (isKeyJustPressed('Backquote') || isAnyGamepadSelectJustPressed()) {
+    const scene = selUI.ui.getScene()!;
+    selUI.inputAssignUI = createInputAssignUI(scene);
+    return false;
+  }
+
   // P1 controls: A/D cycle, C/V confirm, Escape unconfirm
   handlePlayerSelection(selUI.panels[0], 'KeyA', 'KeyD', 'KeyC', 'KeyV', 'Escape');
   // P2 controls: K/; cycle, ArrowLeft/ArrowRight confirm, Backspace unconfirm
   handlePlayerSelection(selUI.panels[1], 'KeyK', 'Semicolon', 'ArrowLeft', 'ArrowRight', 'Backspace');
 
-  handleGamepadSelection(selUI.panels[0], 0);
-  handleGamepadSelection(selUI.panels[1], 1);
+  const p1Pad = getP1GamepadIndex();
+  const p2Pad = getP2GamepadIndex();
+  if (p1Pad !== null) handleGamepadSelection(selUI.panels[0], p1Pad);
+  if (p2Pad !== null) handleGamepadSelection(selUI.panels[1], p2Pad);
 
   // Position root-level cursors based on selected card index
   selUI.p1Cursor.left = `${CARD_CENTER_X[selUI.panels[0].selectedIndex] + CURSOR_P1_OFFSET}px`;
@@ -793,6 +817,10 @@ function handleGamepadSelection(panel: PlayerSelectionPanel, padIdx: number): vo
 }
 
 export function destroySelectionUI(selUI: SelectionUI): void {
+  if (selUI.inputAssignUI) {
+    destroyInputAssignUI(selUI.inputAssignUI);
+    selUI.inputAssignUI = null;
+  }
   selUI.ui.dispose();
   disposeSelectionStage(selUI.stage);
 }

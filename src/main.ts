@@ -18,6 +18,7 @@ import {
 import { createCountdownUI, updateCountdown, destroyCountdown } from './ui/countdown.ts';
 import type { CountdownUI } from './ui/countdown.ts';
 import { P1_KEYS, P2_KEYS, RESTART_DELAY } from './constants.ts';
+import { initDefaultAssignment, getP1GamepadIndex, getP2GamepadIndex } from './ui/inputAssign.ts';
 import type { AbilityType } from './types.ts';
 import type { Vector3 } from '@babylonjs/core';
 
@@ -34,6 +35,7 @@ const playerMeshes = [
 const hud = createHud(scene);
 const effectsPool = createEffectsPool(scene);
 
+initDefaultAssignment();
 let state = createSelectionState();
 let selectionUI = createSelectionUI(scene);
 let gamePhase: 'selecting' | 'countdown' | 'playing' = 'selecting';
@@ -113,9 +115,11 @@ engine.runRenderLoop(() => {
     let p1Input = readInput(P1_KEYS);
     let p2Input = readInput(P2_KEYS);
 
-    // Merge gamepad input (pad 0 → P1, pad 1 → P2)
-    const gp1 = readGamepadInput(0, state.players[0].facingAngle);
-    const gp2 = readGamepadInput(1, state.players[1].facingAngle);
+    // Merge gamepad input (use assigned pad indices)
+    const p1Pad = getP1GamepadIndex();
+    const p2Pad = getP2GamepadIndex();
+    const gp1 = p1Pad !== null ? readGamepadInput(p1Pad, state.players[0].facingAngle) : null;
+    const gp2 = p2Pad !== null ? readGamepadInput(p2Pad, state.players[1].facingAngle) : null;
     if (gp1) p1Input = mergeInput(p1Input, gp1);
     if (gp2) p2Input = mergeInput(p2Input, gp2);
 
@@ -128,7 +132,9 @@ engine.runRenderLoop(() => {
 
       state.restartTimer += dt;
       const canRestart = state.restartTimer > RESTART_DELAY;
-      const restartPressed = isKeyJustPressed('Space') || isGamepadRestart(0) || isGamepadRestart(1);
+      const restartPressed = isKeyJustPressed('Space')
+        || (p1Pad !== null && isGamepadRestart(p1Pad))
+        || (p2Pad !== null && isGamepadRestart(p2Pad));
 
       if (canRestart && restartPressed) {
         const setWon = state.scores[state.winner] >= state.roundsToWin;

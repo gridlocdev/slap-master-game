@@ -15,6 +15,10 @@ export interface Hand {
 
 export type AbilityType = 'burrito' | 'child' | 'melon';
 
+export type InputDevice =
+  | { type: 'keyboard' }
+  | { type: 'gamepad'; index: number };
+
 export interface StinkCloud {
   pos: Vec2;
   timer: number;
