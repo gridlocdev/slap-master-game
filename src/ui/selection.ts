@@ -56,6 +56,13 @@ const CARD_CENTER_X = [-270, -90, 90, 270];
 const CURSOR_P1_OFFSET = -25;
 const CURSOR_P2_OFFSET = 25;
 
+const CARD_ICONS: Record<string, string> = {
+  burrito: '🌯',
+  child: '🧃',
+  melon: '🍈',
+  random: '?',
+};
+
 const CARD_STYLES: Record<string, { bg: string; border: string }> = {
   burrito: { bg: '#2d5a1e', border: '#33cc33' },
   child: { bg: '#5a3a1e', border: '#ff8833' },
@@ -407,7 +414,7 @@ export function createSelectionUI(scene: Scene): SelectionUI {
     const key = isRandom ? 'random' : ABILITIES[i];
     const style = CARD_STYLES[key];
     const label = isRandom ? RANDOM_LABEL : ABILITY_INFO[ABILITIES[i]].name;
-    cards.push(createAbilityCard(cardRow, i, label, style, isRandom));
+    cards.push(createAbilityCard(cardRow, i, key, label, style, isRandom));
   }
 
   // Controls hint bar
@@ -579,7 +586,7 @@ function createPlayerCursor(ui: AdvancedDynamicTexture, label: string, color: st
   return cursor;
 }
 
-function createAbilityCard(parent: StackPanel, idx: number, label: string, style: { bg: string; border: string }, isRandom: boolean): CardUI {
+function createAbilityCard(parent: StackPanel, idx: number, key: string, label: string, style: { bg: string; border: string }, isRandom: boolean): CardUI {
   const wrapper = new Rectangle(`cardWrapper_${idx}`);
   wrapper.width = '180px';
   wrapper.height = 1;
@@ -607,27 +614,35 @@ function createAbilityCard(parent: StackPanel, idx: number, label: string, style
   footer.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
   rect.addControl(footer);
 
+  // Icon area above the footer
+  const iconArea = new Rectangle(`cardIconArea_${idx}`);
+  iconArea.width = 1;
+  iconArea.height = 1;
+  iconArea.paddingBottom = '36px';
+  iconArea.thickness = 0;
+  iconArea.background = '#00000000';
+  iconArea.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+  rect.addControl(iconArea);
+
+  const icon = new TextBlock(`cardIcon_${idx}`, CARD_ICONS[key]);
+  icon.fontSize = isRandom ? 64 : 80;
+  icon.fontFamily = isRandom ? 'monospace' : 'sans-serif';
+  icon.fontWeight = isRandom ? 'bold' : 'normal';
+  icon.color = isRandom ? '#ffffffaa' : '#ffffff';
+  icon.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+  icon.top = isRandom ? '0px' : '6px';
+  icon.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+  if (key === 'melon') icon.left = '-6px';
+  iconArea.addControl(icon);
+
   const nameText = new TextBlock(`cardName_${idx}`, label);
-  nameText.fontSize = 18;
+  nameText.fontSize = 16;
   nameText.fontFamily = 'monospace';
   nameText.fontWeight = 'bold';
   nameText.color = '#ffffff';
   nameText.textWrapping = true;
-  nameText.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-  nameText.top = '-8px';
-  rect.addControl(nameText);
-
-  // "?" icon for RANDOM card
-  if (isRandom) {
-    const questionMark = new TextBlock(`cardQuestion_${idx}`, '?');
-    questionMark.fontSize = 56;
-    questionMark.fontFamily = 'monospace';
-    questionMark.fontWeight = 'bold';
-    questionMark.color = '#ffffffaa';
-    questionMark.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-    questionMark.top = '-14px';
-    rect.addControl(questionMark);
-  }
+  nameText.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+  footer.addControl(nameText);
 
   return { rect, nameText };
 }
