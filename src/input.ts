@@ -1,4 +1,5 @@
 import type { PlayerInput } from './types.ts';
+import { STICK_DEADZONE, TRIGGER_THRESHOLD } from './constants.ts';
 
 // --- Keyboard ---
 
@@ -47,9 +48,6 @@ export function clearJustPressed(): void {
 }
 
 // --- Gamepad ---
-
-const STICK_DEADZONE = 0.25;
-const TRIGGER_THRESHOLD = 0.3;
 
 // Track previous trigger state per gamepad for edge detection
 const prevTriggerLeft = new Map<number, boolean>();

@@ -8,6 +8,7 @@ import {
   MELON_KNOCKBACK, MELON_EXPLODE_RADIUS, MELON_EXPLODE_KB,
   JUICE_MARK_DURATION, DOUBLE_SLAP_WINDOW,
   HAND_RADIUS, ARENA_X, ARENA_W, ARENA_Y, ARENA_H,
+  MELON_SPAWN_OFFSET, MELON_SLAP_FORCE,
 } from '../constants.ts';
 
 export function handleAbilityInput(player: PlayerState, input: PlayerInput, state: GameState, playerIdx: number): void {
@@ -45,8 +46,8 @@ export function handleAbilityInput(player: PlayerState, input: PlayerInput, stat
         const dirY = Math.sin(player.facingAngle);
         state.melons.push({
           pos: {
-            x: player.pos.x + dirX * (player.radius + MELON_RADIUS + 0.1),
-            y: player.pos.y + dirY * (player.radius + MELON_RADIUS + 0.1),
+            x: player.pos.x + dirX * (player.radius + MELON_RADIUS + MELON_SPAWN_OFFSET),
+            y: player.pos.y + dirY * (player.radius + MELON_RADIUS + MELON_SPAWN_OFFSET),
           },
           vel: { x: dirX * MELON_SPEED, y: dirY * MELON_SPEED },
           radius: MELON_RADIUS,
@@ -146,9 +147,8 @@ export function checkMelonCollisions(state: GameState): void {
 
         if (dist < hitDist && dist > 0) {
           // Push melon in the direction from hand to melon
-          const pushForce = 10;
-          melon.vel.x += (dx / dist) * pushForce;
-          melon.vel.y += (dy / dist) * pushForce;
+          melon.vel.x += (dx / dist) * MELON_SLAP_FORCE;
+          melon.vel.y += (dy / dist) * MELON_SLAP_FORCE;
         }
       }
     }

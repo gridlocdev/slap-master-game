@@ -1,6 +1,14 @@
 import { Scene } from '@babylonjs/core';
 import { AdvancedDynamicTexture, TextBlock, Control } from '@babylonjs/gui';
 import type { GameState } from '../types.ts';
+import {
+  HUD_WIN_FONT_SIZE, HUD_RESTART_FONT_SIZE, HUD_SCORE_FONT_SIZE,
+  HUD_LABEL_FONT_SIZE, HUD_COOLDOWN_FONT_SIZE, HUD_CONTROLS_FONT_SIZE,
+  HUD_TEXT_COLOR, HUD_RESTART_COLOR, HUD_CONTROLS_COLOR,
+  P1_HUD_COLOR, P2_HUD_COLOR,
+  HUD_WIN_TOP, HUD_RESTART_TOP, HUD_SCORE_TOP,
+  HUD_LABEL_TOP, HUD_COOLDOWN_TOP, HUD_SIDE_MARGIN, HUD_CONTROLS_TOP,
+} from '../constants.ts';
 
 export interface HudElements {
   ui: AdvancedDynamicTexture;
@@ -24,75 +32,75 @@ export function createHud(scene: Scene): HudElements {
   const ui = AdvancedDynamicTexture.CreateFullscreenUI('ui', true, scene);
 
   const winText = new TextBlock('winText', '');
-  winText.fontSize = 48;
-  winText.color = '#ffffff';
+  winText.fontSize = HUD_WIN_FONT_SIZE;
+  winText.color = HUD_TEXT_COLOR;
   winText.fontFamily = 'monospace';
-  winText.top = '-40px';
+  winText.top = HUD_WIN_TOP;
   winText.isVisible = false;
   ui.addControl(winText);
 
   const restartText = new TextBlock('restartText', '');
-  restartText.fontSize = 20;
-  restartText.color = '#aaaaaa';
+  restartText.fontSize = HUD_RESTART_FONT_SIZE;
+  restartText.color = HUD_RESTART_COLOR;
   restartText.fontFamily = 'monospace';
-  restartText.top = '20px';
+  restartText.top = HUD_RESTART_TOP;
   restartText.isVisible = false;
   ui.addControl(restartText);
 
   const scoreText = new TextBlock('scoreText', '');
-  scoreText.fontSize = 18;
-  scoreText.color = '#ffffff';
+  scoreText.fontSize = HUD_SCORE_FONT_SIZE;
+  scoreText.color = HUD_TEXT_COLOR;
   scoreText.fontFamily = 'monospace';
-  scoreText.top = '55px';
+  scoreText.top = HUD_SCORE_TOP;
   scoreText.isVisible = false;
   ui.addControl(scoreText);
 
   const p1Label = new TextBlock('p1Label', 'P1: WASD + C/V + E');
-  p1Label.fontSize = 14;
-  p1Label.color = '#4488ff';
+  p1Label.fontSize = HUD_LABEL_FONT_SIZE;
+  p1Label.color = P1_HUD_COLOR;
   p1Label.fontFamily = 'monospace';
   p1Label.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   p1Label.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-  p1Label.left = '20px';
-  p1Label.top = '10px';
+  p1Label.left = HUD_SIDE_MARGIN;
+  p1Label.top = HUD_LABEL_TOP;
   ui.addControl(p1Label);
 
   const p2Label = new TextBlock('p2Label', 'P2: OKL; + \u2190/\u2192 + P');
-  p2Label.fontSize = 14;
-  p2Label.color = '#ff4444';
+  p2Label.fontSize = HUD_LABEL_FONT_SIZE;
+  p2Label.color = P2_HUD_COLOR;
   p2Label.fontFamily = 'monospace';
   p2Label.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
   p2Label.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-  p2Label.left = '-20px';
-  p2Label.top = '10px';
+  p2Label.left = `-${HUD_SIDE_MARGIN}`;
+  p2Label.top = HUD_LABEL_TOP;
   ui.addControl(p2Label);
 
   const p1Cooldown = new TextBlock('p1Cooldown', '');
-  p1Cooldown.fontSize = 13;
-  p1Cooldown.color = '#4488ff';
+  p1Cooldown.fontSize = HUD_COOLDOWN_FONT_SIZE;
+  p1Cooldown.color = P1_HUD_COLOR;
   p1Cooldown.fontFamily = 'monospace';
   p1Cooldown.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   p1Cooldown.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-  p1Cooldown.left = '20px';
-  p1Cooldown.top = '28px';
+  p1Cooldown.left = HUD_SIDE_MARGIN;
+  p1Cooldown.top = HUD_COOLDOWN_TOP;
   ui.addControl(p1Cooldown);
 
   const p2Cooldown = new TextBlock('p2Cooldown', '');
-  p2Cooldown.fontSize = 13;
-  p2Cooldown.color = '#ff4444';
+  p2Cooldown.fontSize = HUD_COOLDOWN_FONT_SIZE;
+  p2Cooldown.color = P2_HUD_COLOR;
   p2Cooldown.fontFamily = 'monospace';
   p2Cooldown.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
   p2Cooldown.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-  p2Cooldown.left = '-20px';
-  p2Cooldown.top = '28px';
+  p2Cooldown.left = `-${HUD_SIDE_MARGIN}`;
+  p2Cooldown.top = HUD_COOLDOWN_TOP;
   ui.addControl(p2Cooldown);
 
   const controlsText = new TextBlock('controlsText', 'SLAP your opponent off the arena!');
-  controlsText.fontSize = 14;
-  controlsText.color = '#666688';
+  controlsText.fontSize = HUD_CONTROLS_FONT_SIZE;
+  controlsText.color = HUD_CONTROLS_COLOR;
   controlsText.fontFamily = 'monospace';
   controlsText.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-  controlsText.top = '-15px';
+  controlsText.top = HUD_CONTROLS_TOP;
   ui.addControl(controlsText);
 
   return { ui, winText, restartText, scoreText, p1Label, p2Label, controlsText, p1Cooldown, p2Cooldown };
@@ -102,7 +110,7 @@ export function updateHud(hud: HudElements, state: GameState): void {
   if (state.winner !== null) {
     const setWon = state.scores[state.winner] >= state.roundsToWin;
     const pNum = state.winner + 1;
-    const color = state.winner === 0 ? '#4488ff' : '#ff4444';
+    const color = state.winner === 0 ? P1_HUD_COLOR : P2_HUD_COLOR;
 
     if (setWon) {
       hud.winText.text = `Player ${pNum} wins the set!`;

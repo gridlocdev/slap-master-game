@@ -2,6 +2,7 @@ import type { Hand, PlayerState, PlayerInput } from '../types.ts';
 import {
   WINDUP_TIME, ACTIVE_TIME, RECOVERY_TIME,
   HAND_OFFSET, HAND_RADIUS, KNOCKBACK_FORCE, CHILD_KB_MULT,
+  IDLE_ANGLE, WINDUP_ANGLE, SWING_END_ANGLE, SLAP_REACH,
 } from '../constants.ts';
 
 export function triggerSlap(hand: Hand): void {
@@ -36,12 +37,6 @@ export function handleSlapInput(player: PlayerState, input: PlayerInput): void {
   if (input.slapLeft) triggerSlap(player.hands[0]);
   if (input.slapRight) triggerSlap(player.hands[1]);
 }
-
-// Slap arc angles (relative to facing direction)
-const IDLE_ANGLE = Math.PI / 2;       // 90° — perpendicular at side
-const WINDUP_ANGLE = Math.PI * 0.8;   // 144° — pulled back behind
-const SWING_END_ANGLE = -Math.PI * 0.3; // -54° — swung past front to opposite side
-const SLAP_REACH = 0.85;              // arm extends during active swing
 
 export function getHandWorldPos(player: PlayerState, hand: Hand): { x: number; y: number } {
   const facing = player.facingAngle;

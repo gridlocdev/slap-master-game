@@ -6,6 +6,7 @@ import {
   Color4,
   HemisphericLight,
 } from '@babylonjs/core';
+import { SCENE_BG_COLOR, CAMERA_POS, CAMERA_TARGET, LIGHT_INTENSITY } from './constants.ts';
 
 export interface SceneResult {
   engine: Engine;
@@ -16,14 +17,14 @@ export interface SceneResult {
 export function createScene(canvas: HTMLCanvasElement): SceneResult {
   const engine = new Engine(canvas, true);
   const scene = new Scene(engine);
-  scene.clearColor = new Color4(0.1, 0.1, 0.18, 1);
+  scene.clearColor = new Color4(...SCENE_BG_COLOR);
 
-  const camera = new FreeCamera('camera', new Vector3(0, 14, -10), scene);
-  camera.setTarget(new Vector3(0, 0, 1));
+  const camera = new FreeCamera('camera', new Vector3(...CAMERA_POS), scene);
+  camera.setTarget(new Vector3(...CAMERA_TARGET));
   camera.inputs.clear();
 
   const light = new HemisphericLight('light', new Vector3(0, 1, 0), scene);
-  light.intensity = 0.7;
+  light.intensity = LIGHT_INTENSITY;
 
   return { engine, scene, camera };
 }

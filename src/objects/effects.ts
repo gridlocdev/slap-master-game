@@ -11,12 +11,10 @@ import {
   MELON_RADIUS,
   JUICE_MARK_COLOR, JUICE_MARK_DURATION,
   MELON_BODY_Y_SCALE,
+  MAX_CLOUDS, MAX_MELONS, MAX_JUICE_MARKS,
+  CLOUD_ALPHA, JUICE_MARK_DISC_RADIUS, JUICE_MARK_ALPHA,
 } from '../constants.ts';
 import { getSharedMelonMaterial } from './player.ts';
-
-const MAX_CLOUDS = 8;
-const MAX_MELONS = 8;
-const MAX_JUICE_MARKS = 8;
 
 export interface EffectsPool {
   clouds: Mesh[];
@@ -38,7 +36,7 @@ export function createEffectsPool(scene: Scene): EffectsPool {
     const mat = new StandardMaterial(`cloudMat_${i}`, scene);
     mat.emissiveColor = new Color3(...STINK_CLOUD_COLOR);
     mat.disableLighting = true;
-    mat.alpha = 0.4;
+    mat.alpha = CLOUD_ALPHA;
     mesh.material = mat;
     mesh.setEnabled(false);
     clouds.push(mesh);
@@ -63,14 +61,14 @@ export function createEffectsPool(scene: Scene): EffectsPool {
   const juiceMarkMats: StandardMaterial[] = [];
   for (let i = 0; i < MAX_JUICE_MARKS; i++) {
     const mesh = MeshBuilder.CreateDisc(`juice_${i}`, {
-      radius: 0.8,
+      radius: JUICE_MARK_DISC_RADIUS,
       tessellation: 16,
     }, scene);
     mesh.rotation.x = Math.PI / 2; // lay flat
     const mat = new StandardMaterial(`juiceMat_${i}`, scene);
     mat.emissiveColor = new Color3(...JUICE_MARK_COLOR);
     mat.disableLighting = true;
-    mat.alpha = 0.6;
+    mat.alpha = JUICE_MARK_ALPHA;
     mesh.material = mat;
     mesh.setEnabled(false);
     juiceMarks.push(mesh);
@@ -88,7 +86,7 @@ export function updateEffects(pool: EffectsPool, state: GameState): void {
       pool.clouds[i].setEnabled(true);
       pool.clouds[i].position.set(cloud.pos.x, STINK_CLOUD_RADIUS, cloud.pos.y);
       // Fade out over duration
-      const alpha = 0.4 * (cloud.timer / STINK_CLOUD_DURATION);
+      const alpha = CLOUD_ALPHA * (cloud.timer / STINK_CLOUD_DURATION);
       pool.cloudMats[i].alpha = alpha;
     } else {
       pool.clouds[i].setEnabled(false);
@@ -113,7 +111,7 @@ export function updateEffects(pool: EffectsPool, state: GameState): void {
       const mark = state.juiceMarks[i];
       pool.juiceMarks[i].setEnabled(true);
       pool.juiceMarks[i].position.set(mark.pos.x, 0.01, mark.pos.y);
-      const alpha = 0.6 * (mark.timer / JUICE_MARK_DURATION);
+      const alpha = JUICE_MARK_ALPHA * (mark.timer / JUICE_MARK_DURATION);
       pool.juiceMarkMats[i].alpha = alpha;
     } else {
       pool.juiceMarks[i].setEnabled(false);

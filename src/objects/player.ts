@@ -17,6 +17,15 @@ import {
   CHILD_SCALE, TAUNT_DURATION,
   HEADBAND_SEGMENTS, HEADBAND_SEG_LENGTH, HEADBAND_DAMPING,
   MELON_BODY_Y_SCALE,
+  MELON_EMISSIVE_COLOR, EYE_SIZE_FACTOR, PUPIL_SIZE_FACTOR,
+  HEADBAND_TORUS_SCALE, HEADBAND_TORUS_THICKNESS,
+  HEADBAND_KNOT_DIAMETER, HEADBAND_TAIL_W, HEADBAND_TAIL_H,
+  QUESTION_DISC_RADIUS_FACTOR, QUESTION_DISC_COLOR,
+  HEADBAND_BAND_Y_FACTOR, HEADBAND_KNOT_DIST_FACTOR,
+  HEADBAND_SPLAY_ANGLES, HEADBAND_GRAVITY, HEADBAND_CONSTRAINT_ITERS,
+  DASH_TINT_COLOR, HAND_ACTIVE_SCALE,
+  EYE_DIST_FACTOR, EYE_FORWARD_FACTOR, EYE_Y_FACTOR, PUPIL_FORWARD_FACTOR,
+  TAUNT_EASING_COEFF,
 } from '../constants.ts';
 
 export interface PlayerMeshes {
@@ -96,7 +105,7 @@ export function getSharedMelonMaterial(scene: Scene): StandardMaterial {
   const tex = createMelonTexture(scene, 'shared');
   mat.diffuseTexture = tex;
   mat.diffuseColor = Color3.White();
-  mat.emissiveColor = new Color3(0.2, 0.55, 0.2);
+  mat.emissiveColor = new Color3(...MELON_EMISSIVE_COLOR);
   sharedMelonMat = mat;
   return mat;
 }
@@ -129,7 +138,7 @@ export function createPlayerMeshes(scene: Scene, idx: number): PlayerMeshes {
   }
 
   // Eye whites
-  const eyeSize = PLAYER_RADIUS * 0.18;
+  const eyeSize = PLAYER_RADIUS * EYE_SIZE_FACTOR;
   const eyeWhites: [Mesh, Mesh] = [
     MeshBuilder.CreateSphere(`${tag}_eyeL`, { diameter: eyeSize * 2, segments: 8 }, scene),
     MeshBuilder.CreateSphere(`${tag}_eyeR`, { diameter: eyeSize * 2, segments: 8 }, scene),
@@ -145,7 +154,7 @@ export function createPlayerMeshes(scene: Scene, idx: number): PlayerMeshes {
   }
 
   // Pupils
-  const pupilSize = eyeSize * 0.6;
+  const pupilSize = eyeSize * PUPIL_SIZE_FACTOR;
   const pupils: [Mesh, Mesh] = [
     MeshBuilder.CreateSphere(`${tag}_pupilL`, { diameter: pupilSize * 2, segments: 8 }, scene),
     MeshBuilder.CreateSphere(`${tag}_pupilR`, { diameter: pupilSize * 2, segments: 8 }, scene),
@@ -162,8 +171,8 @@ export function createPlayerMeshes(scene: Scene, idx: number): PlayerMeshes {
 
   // --- Headband (burrito) ---
   const headbandBand = MeshBuilder.CreateTorus(`${tag}_hbBand`, {
-    diameter: PLAYER_RADIUS * 1.6,
-    thickness: 0.06,
+    diameter: PLAYER_RADIUS * HEADBAND_TORUS_SCALE,
+    thickness: HEADBAND_TORUS_THICKNESS,
     tessellation: 24,
   }, scene);
   const hbBandMat = new StandardMaterial(`${tag}_hbBandMat`, scene);
@@ -172,7 +181,7 @@ export function createPlayerMeshes(scene: Scene, idx: number): PlayerMeshes {
   headbandBand.material = hbBandMat;
   headbandBand.setEnabled(false);
 
-  const headbandKnot = MeshBuilder.CreateSphere(`${tag}_hbKnot`, { diameter: 0.1, segments: 8 }, scene);
+  const headbandKnot = MeshBuilder.CreateSphere(`${tag}_hbKnot`, { diameter: HEADBAND_KNOT_DIAMETER, segments: 8 }, scene);
   const hbKnotMat = new StandardMaterial(`${tag}_hbKnotMat`, scene);
   hbKnotMat.emissiveColor = new Color3(1, 1, 1);
   hbKnotMat.disableLighting = true;
@@ -185,8 +194,8 @@ export function createPlayerMeshes(scene: Scene, idx: number): PlayerMeshes {
     const tails = t === 0 ? headbandTailsL : headbandTailsR;
     for (let s = 0; s < HEADBAND_SEGMENTS; s++) {
       const seg = MeshBuilder.CreateBox(`${tag}_hbTail${t}_${s}`, {
-        width: 0.04,
-        height: 0.02,
+        width: HEADBAND_TAIL_W,
+        height: HEADBAND_TAIL_H,
         depth: HEADBAND_SEG_LENGTH,
       }, scene);
       const segMat = new StandardMaterial(`${tag}_hbTailMat${t}_${s}`, scene);
@@ -213,13 +222,13 @@ export function createPlayerMeshes(scene: Scene, idx: number): PlayerMeshes {
   const melonTex = createMelonTexture(scene, tag);
   melonBodyMat.diffuseTexture = melonTex;
   melonBodyMat.diffuseColor = Color3.White();
-  melonBodyMat.emissiveColor = new Color3(0.2, 0.55, 0.2);
+  melonBodyMat.emissiveColor = new Color3(...MELON_EMISSIVE_COLOR);
   melonBodyMesh.material = melonBodyMat;
   melonBodyMesh.setEnabled(false);
 
   // --- Question disc (random) ---
   const questionDisc = MeshBuilder.CreateDisc(`${tag}_questionDisc`, {
-    radius: PLAYER_RADIUS * 0.9,
+    radius: PLAYER_RADIUS * QUESTION_DISC_RADIUS_FACTOR,
     tessellation: 24,
     sideOrientation: Mesh.DOUBLESIDE,
   }, scene);
@@ -229,7 +238,7 @@ export function createPlayerMeshes(scene: Scene, idx: number): PlayerMeshes {
   const qTex = createQuestionTexture(scene, tag);
   questionDiscMat.diffuseTexture = qTex;
   questionDiscMat.diffuseColor = Color3.White();
-  questionDiscMat.emissiveColor = new Color3(0.5, 0.5, 0.5);
+  questionDiscMat.emissiveColor = new Color3(...QUESTION_DISC_COLOR);
   questionDisc.material = questionDiscMat;
   questionDisc.setEnabled(false);
 
@@ -317,18 +326,18 @@ function updateHeadbandPhysics(
   const backZ = -Math.sin(facingAngle);
 
   // Position headband band and knot — torus default is horizontal (XZ plane), no rotation needed
-  const bandY = anchorY + PLAYER_RADIUS * 0.65;
+  const bandY = anchorY + PLAYER_RADIUS * HEADBAND_BAND_Y_FACTOR;
   meshes.headbandBand.position.set(anchorX, bandY, anchorZ);
   meshes.headbandBand.rotation.x = 0;
   meshes.headbandBand.rotation.y = 0;
 
-  const knotDist = PLAYER_RADIUS * 0.8;
+  const knotDist = PLAYER_RADIUS * HEADBAND_KNOT_DIST_FACTOR;
   const knotX = anchorX + backX * knotDist;
   const knotZ = anchorZ + backZ * knotDist;
   meshes.headbandKnot.position.set(knotX, bandY, knotZ);
 
   // Splay angle for two tails
-  const splayAngles = [-0.3, 0.3];
+  const splayAngles = HEADBAND_SPLAY_ANGLES;
 
   for (let t = 0; t < 2; t++) {
     const positions = meshes.headbandPositions[t];
@@ -365,7 +374,7 @@ function updateHeadbandPhysics(
       const cz = positions[si + 2];
 
       const vx = (cx - prevPositions[si]) * HEADBAND_DAMPING;
-      const vy = (cy - prevPositions[si + 1]) * HEADBAND_DAMPING - 0.5 * dt; // gravity
+      const vy = (cy - prevPositions[si + 1]) * HEADBAND_DAMPING - HEADBAND_GRAVITY * dt; // gravity
       const vz = (cz - prevPositions[si + 2]) * HEADBAND_DAMPING;
 
       prevPositions[si] = cx;
@@ -377,8 +386,8 @@ function updateHeadbandPhysics(
       positions[si + 2] = cz + vz;
     }
 
-    // Distance constraints (3 iterations)
-    for (let iter = 0; iter < 3; iter++) {
+    // Distance constraints
+    for (let iter = 0; iter < HEADBAND_CONSTRAINT_ITERS; iter++) {
       // First segment anchored to knot
       {
         const si = 0;
@@ -496,7 +505,7 @@ export function updatePlayerMeshes(meshes: PlayerMeshes, player: PlayerState, id
   // Dash green tint
   const bodyColor = idx === 0 ? P1_BODY_COLOR : P2_BODY_COLOR;
   if (player.isDashing) {
-    meshes.bodyMat.emissiveColor = new Color3(0.2, 0.9, 0.2);
+    meshes.bodyMat.emissiveColor = new Color3(...DASH_TINT_COLOR);
   } else {
     meshes.bodyMat.emissiveColor = new Color3(...bodyColor);
   }
@@ -505,7 +514,7 @@ export function updatePlayerMeshes(meshes: PlayerMeshes, player: PlayerState, id
   let tauntAngle = 0;
   if (player.tauntTimer > 0) {
     const t = 1 - player.tauntTimer / TAUNT_DURATION;
-    const eased = t < 0.5 ? 8 * t * t * t * t : 1 - 8 * (1 - t) * (1 - t) * (1 - t) * (1 - t);
+    const eased = t < 0.5 ? TAUNT_EASING_COEFF * t * t * t * t : 1 - TAUNT_EASING_COEFF * (1 - t) * (1 - t) * (1 - t) * (1 - t);
     tauntAngle = eased * Math.PI * 2;
   }
   meshes.body.rotation.y = 0;
@@ -534,7 +543,7 @@ export function updatePlayerMeshes(meshes: PlayerMeshes, player: PlayerState, id
     meshes.hands[i].position.set(hx, handY + yOffset, hz);
 
     // Scale up slightly when active, apply child scale
-    const s = (hand.state === 'active' ? 1.15 : 1) * scale;
+    const s = (hand.state === 'active' ? HAND_ACTIVE_SCALE : 1) * scale;
     meshes.hands[i].scaling.setAll(s);
   }
 
@@ -546,9 +555,9 @@ export function updatePlayerMeshes(meshes: PlayerMeshes, player: PlayerState, id
   const perpZ = Math.cos(angle);
 
   const r = player.radius;
-  const eyeDist = r * 0.4;
-  const eyeForward = r * 0.85;
-  const eyeY = bodyY + r * 0.2;
+  const eyeDist = r * EYE_DIST_FACTOR;
+  const eyeForward = r * EYE_FORWARD_FACTOR;
+  const eyeY = bodyY + r * EYE_Y_FACTOR;
 
   for (let i = 0; i < 2; i++) {
     const sign = i === 0 ? 1 : -1;
@@ -558,7 +567,7 @@ export function updatePlayerMeshes(meshes: PlayerMeshes, player: PlayerState, id
     meshes.eyeWhites[i].scaling.setAll(scale);
 
     // Pupils slightly further forward
-    const pupilForward = eyeForward + r * 0.08;
+    const pupilForward = eyeForward + r * PUPIL_FORWARD_FACTOR;
     const px = player.pos.x + fwdX * pupilForward + perpX * eyeDist * sign;
     const pz = player.pos.y + fwdZ * pupilForward + perpZ * eyeDist * sign;
     meshes.pupils[i].position.set(px, eyeY + yOffset, pz);
