@@ -11,10 +11,10 @@ import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, StackPanel } fro
 import type { AbilityType, GameState } from '../types.ts';
 import type { PlayerMeshes } from '../objects/player.ts';
 import { applyAbilityVisual } from '../objects/player.ts';
-import { isKeyJustPressed, isAnyGamepadSelectJustPressed } from '../input.ts';
+import { isKeyJustPressed, isAnyGamepadSelectJustPressed, isGamepadBJustPressed } from '../input.ts';
 import {
   createInputAssignUI, updateInputAssignUI, destroyInputAssignUI,
-  getP1GamepadIndex, getP2GamepadIndex,
+  getP1GamepadIndex, getP2GamepadIndex, isP2Unassigned,
 } from './inputAssign.ts';
 import type { InputAssignUI } from './inputAssign.ts';
 import {
@@ -699,7 +699,19 @@ export function updateSelection(selUI: SelectionUI, state: GameState): boolean {
 
   const p1Pad = getP1GamepadIndex();
   const p2Pad = getP2GamepadIndex();
-  if (p1Pad !== null) handleGamepadSelection(selUI.panels[0], p1Pad);
+  const solo = p1Pad !== null && isP2Unassigned();
+  if (p1Pad !== null) {
+    if (solo && selUI.panels[0].confirmed) {
+      // P1 confirmed in solo mode → gamepad controls P2's panel
+      if (!selUI.panels[1].confirmed && isGamepadBJustPressed(p1Pad)) {
+        unconfirmPanel(selUI.panels[0]); // B = back to own panel
+      } else {
+        handleGamepadSelection(selUI.panels[1], p1Pad);
+      }
+    } else {
+      handleGamepadSelection(selUI.panels[0], p1Pad);
+    }
+  }
   if (p2Pad !== null) handleGamepadSelection(selUI.panels[1], p2Pad);
 
   // Position root-level cursors based on selected card index

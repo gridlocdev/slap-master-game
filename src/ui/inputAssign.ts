@@ -37,6 +37,10 @@ export function getP2GamepadIndex(): number | null {
   return assignment.p2?.type === 'gamepad' ? assignment.p2.index : null;
 }
 
+export function isP2Unassigned(): boolean {
+  return assignment.p2 === null;
+}
+
 export function isOverlayActive(): boolean {
   return overlayActive;
 }
@@ -277,8 +281,11 @@ function syncPanelVisuals(ui: InputAssignUI): void {
 
   // Instruction text
   const bothAssigned = assignment.p1 !== null && assignment.p2 !== null;
+  const soloP1 = assignment.p1?.type === 'gamepad' && assignment.p2 === null;
   if (p1Ready && p2Ready) {
     ui.instructionText.text = '';
+  } else if (soloP1) {
+    ui.instructionText.text = 'Press Select to start solo';
   } else if (bothAssigned) {
     ui.instructionText.text = 'Press ` or Select to ready up';
   } else {
@@ -340,9 +347,11 @@ export function updateInputAssignUI(ui: InputAssignUI): boolean {
     }
   }
 
-  // --- Ready detection (only when both assigned) ---
+  // --- Ready detection ---
   const bothAssigned = assignment.p1 !== null && assignment.p2 !== null;
-  if (bothAssigned) {
+  const soloP1 = assignment.p1?.type === 'gamepad' && assignment.p2 === null;
+  const canReady = bothAssigned || soloP1;
+  if (canReady) {
     // P1 ready: keyboard → Backquote, gamepad → Select
     if (!p1Ready) {
       if (assignment.p1!.type === 'keyboard' && isKeyJustPressed('Backquote')) {
@@ -352,10 +361,14 @@ export function updateInputAssignUI(ui: InputAssignUI): boolean {
       }
     }
 
+    // Solo: P2 auto-readies with P1
+    if (soloP1 && p1Ready) {
+      p2Ready = true;
+    }
+
     // P2 ready: keyboard → Backquote, gamepad → Select
-    if (!p2Ready) {
+    if (!p2Ready && bothAssigned) {
       if (assignment.p2!.type === 'keyboard' && isKeyJustPressed('Backquote')) {
-        // Both on keyboard share the same Backquote key — ready both if both are keyboard
         p2Ready = true;
       } else if (assignment.p2!.type === 'gamepad' && isGamepadSelectJustPressed(assignment.p2!.index)) {
         p2Ready = true;
@@ -363,7 +376,7 @@ export function updateInputAssignUI(ui: InputAssignUI): boolean {
     }
 
     // If both keyboard, single Backquote readies both
-    if (assignment.p1!.type === 'keyboard' && assignment.p2!.type === 'keyboard' && isKeyJustPressed('Backquote')) {
+    if (bothAssigned && assignment.p1!.type === 'keyboard' && assignment.p2!.type === 'keyboard' && isKeyJustPressed('Backquote')) {
       p1Ready = true;
       p2Ready = true;
     }

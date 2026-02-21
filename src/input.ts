@@ -58,6 +58,9 @@ const triggerJustRight = new Set<number>();
 // Track X button (index 2) for ability
 const buttonJustX = new Set<number>();
 const prevButtonX = new Map<number, boolean>();
+// B button (index 1) for back/unconfirm edge detection
+const buttonJustB = new Set<number>();
+const prevButtonB = new Map<number, boolean>();
 // Also track A/Start for restart
 const buttonJustA = new Set<number>();
 const prevButtonA = new Map<number, boolean>();
@@ -68,6 +71,7 @@ const prevButtonSelect = new Map<number, boolean>();
 export function pollGamepads(): void {
   triggerJustLeft.clear();
   triggerJustRight.clear();
+  buttonJustB.clear();
   buttonJustX.clear();
   buttonJustA.clear();
   buttonJustSelect.clear();
@@ -87,6 +91,11 @@ export function pollGamepads(): void {
     if (rtDown && !prevTriggerRight.get(i)) triggerJustRight.add(i);
     prevTriggerLeft.set(i, ltDown);
     prevTriggerRight.set(i, rtDown);
+
+    // B button (index 1) for back/unconfirm
+    const bDown = gp.buttons[1]?.pressed ?? false;
+    if (bDown && !prevButtonB.get(i)) buttonJustB.add(i);
+    prevButtonB.set(i, bDown);
 
     // X button (index 2) for ability
     const xDown = gp.buttons[2]?.pressed ?? false;
@@ -145,6 +154,10 @@ export function isGamepadRestart(padIndex: number): boolean {
 
 export function isGamepadSelectJustPressed(padIndex: number): boolean {
   return buttonJustSelect.has(padIndex);
+}
+
+export function isGamepadBJustPressed(padIndex: number): boolean {
+  return buttonJustB.has(padIndex);
 }
 
 export function isAnyGamepadSelectJustPressed(): boolean {
