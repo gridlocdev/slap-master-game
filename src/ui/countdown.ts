@@ -22,6 +22,8 @@ export function createCountdownUI(scene: Scene): CountdownUI {
   text.color = '#ffffff';
   text.fontFamily = 'monospace';
   text.fontWeight = 'bold';
+  text.outlineWidth = 4;
+  text.outlineColor = '#000000';
   text.scaleX = 0.3;
   text.scaleY = 0.3;
   text.alpha = 1;
