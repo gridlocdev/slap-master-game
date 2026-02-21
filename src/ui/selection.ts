@@ -54,7 +54,7 @@ const CARD_COUNT = ABILITIES.length + 1;
 const CARD_STYLES: Record<string, { bg: string; border: string }> = {
   burrito: { bg: '#2d5a1e', border: '#33cc33' },
   child: { bg: '#5a3a1e', border: '#ff8833' },
-  melon: { bg: '#1e4a1e', border: '#44bb22' },
+  melon: { bg: '#3a3a1e', border: '#ccaa22' },
   random: { bg: '#3a1e5a', border: '#8844cc' },
 };
 
@@ -352,7 +352,7 @@ export function createSelectionUI(scene: Scene): SelectionUI {
 
   // VS text centered
   const vsText = new TextBlock('vsText', 'VS');
-  vsText.fontSize = 64;
+  vsText.fontSize = 80;
   vsText.fontFamily = 'monospace';
   vsText.fontWeight = 'bold';
   vsText.color = '#ffffff';
@@ -363,8 +363,8 @@ export function createSelectionUI(scene: Scene): SelectionUI {
 
   // Bo3 label — top center
   const bo3Rect = new Rectangle('bo3Rect');
-  bo3Rect.width = '80px';
-  bo3Rect.height = '32px';
+  bo3Rect.width = '100px';
+  bo3Rect.height = '40px';
   bo3Rect.background = '#000000';
   bo3Rect.thickness = 0;
   bo3Rect.cornerRadius = 4;
@@ -374,7 +374,7 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   ui.addControl(bo3Rect);
 
   const bo3Text = new TextBlock('bo3Text', 'Bo3');
-  bo3Text.fontSize = 18;
+  bo3Text.fontSize = 24;
   bo3Text.fontFamily = 'monospace';
   bo3Text.fontWeight = 'bold';
   bo3Text.color = '#ffffff';
@@ -387,6 +387,7 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   bottomContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
   bottomContainer.thickness = 0;
   bottomContainer.background = '#111122ee';
+  bottomContainer.clipChildren = false;
   ui.addControl(bottomContainer);
 
   const cardRow = new StackPanel('cardRow');
@@ -394,6 +395,7 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   cardRow.height = '65%';
   cardRow.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   cardRow.top = '10px';
+  cardRow.clipChildren = false;
   bottomContainer.addControl(cardRow);
 
   const cards: CardUI[] = [];
@@ -402,7 +404,7 @@ export function createSelectionUI(scene: Scene): SelectionUI {
     const key = isRandom ? 'random' : ABILITIES[i];
     const style = CARD_STYLES[key];
     const label = isRandom ? RANDOM_LABEL : ABILITY_INFO[ABILITIES[i]].name;
-    cards.push(createAbilityCard(cardRow, i, label, style));
+    cards.push(createAbilityCard(cardRow, i, label, style, isRandom));
   }
 
   // Controls hint bar
@@ -415,7 +417,7 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   bottomContainer.addControl(controlsBar);
 
   const controlsLeft = new TextBlock('ctrlLeft', 'P1: A/D cycle, C/V select');
-  controlsLeft.fontSize = 13;
+  controlsLeft.fontSize = 16;
   controlsLeft.color = P1_HUD_COLOR;
   controlsLeft.fontFamily = 'monospace';
   controlsLeft.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -423,7 +425,7 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   controlsBar.addControl(controlsLeft);
 
   const controlsRight = new TextBlock('ctrlRight', 'P2: K/; cycle, \u2190/\u2192 select');
-  controlsRight.fontSize = 13;
+  controlsRight.fontSize = 16;
   controlsRight.color = P2_HUD_COLOR;
   controlsRight.fontFamily = 'monospace';
   controlsRight.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
@@ -431,8 +433,8 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   controlsBar.addControl(controlsRight);
 
   const controlsCenter = new TextBlock('ctrlCenter', 'Gamepad: Stick cycle, X select, B back');
-  controlsCenter.fontSize = 12;
-  controlsCenter.color = '#666666';
+  controlsCenter.fontSize = 14;
+  controlsCenter.color = '#8888aa';
   controlsCenter.fontFamily = 'monospace';
   controlsBar.addControl(controlsCenter);
 
@@ -452,43 +454,43 @@ function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPane
   container.background = '#00000000';
   parent.addControl(container);
 
-  // Player tag (P1/P2 badge) — bottom corner
+  // Player tag (P1/P2 badge) — top corner
   const playerTag = new Rectangle(`playerTag_${idx}`);
-  playerTag.width = '80px';
-  playerTag.height = '40px';
+  playerTag.width = '100px';
+  playerTag.height = '48px';
   playerTag.background = '#000000cc';
   playerTag.thickness = 3;
   playerTag.color = playerColor;
   playerTag.cornerRadius = 4;
   playerTag.horizontalAlignment = isP1 ? Control.HORIZONTAL_ALIGNMENT_LEFT : Control.HORIZONTAL_ALIGNMENT_RIGHT;
-  playerTag.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+  playerTag.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   playerTag.left = isP1 ? '20px' : '-20px';
-  playerTag.top = '-15px';
+  playerTag.top = '15px';
   playerTag.zIndex = 5;
   container.addControl(playerTag);
 
   const tagText = new TextBlock(`tagText_${idx}`, isP1 ? 'P1' : 'P2');
-  tagText.fontSize = 22;
+  tagText.fontSize = 28;
   tagText.fontFamily = 'monospace';
   tagText.fontWeight = 'bold';
   tagText.color = playerColor;
   playerTag.addControl(tagText);
 
-  // "ABILITY" header + ability name — bottom bar
+  // "ABILITY" header + ability name + description — bottom bar
   const abilityHeader = new Rectangle(`abilityHeader_${idx}`);
-  abilityHeader.width = '260px';
-  abilityHeader.height = '50px';
+  abilityHeader.width = '340px';
+  abilityHeader.height = '95px';
   abilityHeader.background = '#000000cc';
   abilityHeader.thickness = 0;
   abilityHeader.horizontalAlignment = isP1 ? Control.HORIZONTAL_ALIGNMENT_LEFT : Control.HORIZONTAL_ALIGNMENT_RIGHT;
   abilityHeader.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
   abilityHeader.left = isP1 ? '100px' : '-100px';
-  abilityHeader.top = '-30px';
+  abilityHeader.top = '-15px';
   abilityHeader.zIndex = 4;
   container.addControl(abilityHeader);
 
   const abilityLabel = new TextBlock(`abilityLabel_${idx}`, 'ABILITY');
-  abilityLabel.fontSize = 18;
+  abilityLabel.fontSize = 22;
   abilityLabel.fontFamily = 'monospace';
   abilityLabel.fontWeight = 'bold';
   abilityLabel.color = playerColor;
@@ -497,28 +499,26 @@ function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPane
   abilityHeader.addControl(abilityLabel);
 
   const abilityName = new TextBlock(`abilityName_${idx}`, '');
-  abilityName.fontSize = 14;
+  abilityName.fontSize = 18;
   abilityName.fontFamily = 'monospace';
   abilityName.color = '#ffffff';
-  abilityName.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-  abilityName.top = '-4px';
+  abilityName.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+  abilityName.top = '2px';
   abilityHeader.addControl(abilityName);
 
-  // Description text
+  // Description text — inside header box
   const abilityDesc = new TextBlock(`abilityDesc_${idx}`, '');
   abilityDesc.fontSize = 14;
   abilityDesc.fontFamily = 'monospace';
   abilityDesc.color = '#ffffffaa';
   abilityDesc.textWrapping = true;
-  abilityDesc.outlineWidth = 3;
-  abilityDesc.outlineColor = '#000000';
-  abilityDesc.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-  abilityDesc.top = '-85px';
-  container.addControl(abilityDesc);
+  abilityDesc.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+  abilityDesc.top = '-6px';
+  abilityHeader.addControl(abilityDesc);
 
   // Status (READY!) text
   const statusText = new TextBlock(`statusText_${idx}`, '');
-  statusText.fontSize = 32;
+  statusText.fontSize = 40;
   statusText.fontFamily = 'monospace';
   statusText.fontWeight = 'bold';
   statusText.color = '#44ff44';
@@ -541,55 +541,114 @@ function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPane
   };
 }
 
-function createAbilityCard(parent: StackPanel, idx: number, label: string, style: { bg: string; border: string }): CardUI {
+function createAbilityCard(parent: StackPanel, idx: number, label: string, style: { bg: string; border: string }, isRandom: boolean): CardUI {
   const wrapper = new Rectangle(`cardWrapper_${idx}`);
-  wrapper.width = '160px';
+  wrapper.width = '180px';
   wrapper.height = 1;
   wrapper.thickness = 0;
   wrapper.background = '#00000000';
   wrapper.paddingLeft = '8px';
   wrapper.paddingRight = '8px';
+  wrapper.clipChildren = false;
   parent.addControl(wrapper);
 
   const rect = new Rectangle(`card_${idx}`);
   rect.width = 1;
-  rect.height = '90%';
+  rect.height = '80%';
   rect.background = style.bg;
   rect.thickness = 3;
   rect.color = style.border;
   rect.cornerRadius = 6;
   wrapper.addControl(rect);
 
+  // Dark footer strip for text contrast
+  const footer = new Rectangle(`cardFooter_${idx}`);
+  footer.width = 1;
+  footer.height = '36px';
+  footer.background = '#00000066';
+  footer.thickness = 0;
+  footer.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+  rect.addControl(footer);
+
   const nameText = new TextBlock(`cardName_${idx}`, label);
-  nameText.fontSize = 12;
+  nameText.fontSize = 18;
   nameText.fontFamily = 'monospace';
+  nameText.fontWeight = 'bold';
   nameText.color = '#ffffff';
   nameText.textWrapping = true;
   nameText.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-  nameText.top = '-10px';
+  nameText.top = '-8px';
   rect.addControl(nameText);
 
+  // "?" icon for RANDOM card
+  if (isRandom) {
+    const questionMark = new TextBlock(`cardQuestion_${idx}`, '?');
+    questionMark.fontSize = 56;
+    questionMark.fontFamily = 'monospace';
+    questionMark.fontWeight = 'bold';
+    questionMark.color = '#ffffffaa';
+    questionMark.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+    questionMark.top = '-14px';
+    rect.addControl(questionMark);
+  }
+
+  // P1 cursor — label + downward arrow, left-of-center above card
   const p1Cursor = new Rectangle(`p1Cursor_${idx}`);
-  p1Cursor.width = 1;
-  p1Cursor.height = 1;
-  p1Cursor.thickness = 4;
-  p1Cursor.color = P1_HUD_COLOR;
+  p1Cursor.width = '50px';
+  p1Cursor.height = '65px';
+  p1Cursor.thickness = 0;
   p1Cursor.background = '#00000000';
-  p1Cursor.cornerRadius = 6;
+  p1Cursor.clipChildren = false;
+  p1Cursor.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+  p1Cursor.left = '-25px';
+  p1Cursor.top = '-12px';
   p1Cursor.isVisible = false;
   p1Cursor.zIndex = 10;
-  rect.addControl(p1Cursor);
+  wrapper.addControl(p1Cursor);
 
+  const p1Label = new TextBlock(`p1Label_${idx}`, 'P1');
+  p1Label.fontSize = 18;
+  p1Label.fontFamily = 'monospace';
+  p1Label.fontWeight = 'bold';
+  p1Label.color = P1_HUD_COLOR;
+  p1Label.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+  p1Cursor.addControl(p1Label);
+
+  const p1ArrowTip = new TextBlock(`p1ArrowTip_${idx}`, '\u25BC');
+  p1ArrowTip.fontSize = 32;
+  p1ArrowTip.fontFamily = 'monospace';
+  p1ArrowTip.color = P1_HUD_COLOR;
+  p1ArrowTip.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+  p1Cursor.addControl(p1ArrowTip);
+
+  // P2 cursor — label + downward arrow, right-of-center above card
   const p2Cursor = new Rectangle(`p2Cursor_${idx}`);
-  p2Cursor.width = '90%';
-  p2Cursor.height = '90%';
-  p2Cursor.thickness = 4;
-  p2Cursor.color = P2_HUD_COLOR;
+  p2Cursor.width = '50px';
+  p2Cursor.height = '65px';
+  p2Cursor.thickness = 0;
   p2Cursor.background = '#00000000';
-  p2Cursor.cornerRadius = 4;
+  p2Cursor.clipChildren = false;
+  p2Cursor.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+  p2Cursor.left = '25px';
+  p2Cursor.top = '-12px';
   p2Cursor.isVisible = false;
   p2Cursor.zIndex = 10;
-  rect.addControl(p2Cursor);
+  wrapper.addControl(p2Cursor);
+
+  const p2Label = new TextBlock(`p2Label_${idx}`, 'P2');
+  p2Label.fontSize = 18;
+  p2Label.fontFamily = 'monospace';
+  p2Label.fontWeight = 'bold';
+  p2Label.color = P2_HUD_COLOR;
+  p2Label.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+  p2Cursor.addControl(p2Label);
+
+  const p2ArrowTip = new TextBlock(`p2ArrowTip_${idx}`, '\u25BC');
+  p2ArrowTip.fontSize = 32;
+  p2ArrowTip.fontFamily = 'monospace';
+  p2ArrowTip.color = P2_HUD_COLOR;
+  p2ArrowTip.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+  p2Cursor.addControl(p2ArrowTip);
 
   return { rect, nameText, p1Cursor, p2Cursor };
 }
