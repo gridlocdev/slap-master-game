@@ -368,7 +368,7 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   vsText.fontFamily = 'monospace';
   vsText.fontWeight = 'bold';
   vsText.color = '#ffffff';
-  vsText.outlineWidth = 4;
+  vsText.outlineWidth = 8;
   vsText.outlineColor = '#000000';
   vsText.zIndex = 10;
   topContainer.addControl(vsText);
@@ -573,6 +573,8 @@ function createPlayerCursor(ui: AdvancedDynamicTexture, label: string, color: st
   labelText.fontFamily = 'monospace';
   labelText.fontWeight = 'bold';
   labelText.color = color;
+  labelText.outlineWidth = 4;
+  labelText.outlineColor = '#000000';
   labelText.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   cursor.addControl(labelText);
 
@@ -580,6 +582,8 @@ function createPlayerCursor(ui: AdvancedDynamicTexture, label: string, color: st
   arrow.fontSize = 48;
   arrow.fontFamily = 'monospace';
   arrow.color = color;
+  arrow.outlineWidth = 4;
+  arrow.outlineColor = '#000000';
   arrow.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
   cursor.addControl(arrow);
 
