@@ -10,7 +10,6 @@ const MENU_ITEMS = [
   { key: 'ai', label: 'vs AI', bg: '#1e2d5a', border: '#4488ff', width: '160px' },
   { key: 'controls', label: 'Controls', bg: '#5a3a1e', border: '#ff8833', width: '200px' },
   { key: 'settings', label: 'Settings', bg: '#3a1e5a', border: '#8844cc', width: '200px' },
-  { key: 'quit', label: 'Quit Game', bg: '#5a1e1e', border: '#ff4444', width: '220px' },
 ] as const;
 
 interface MenuButton {
