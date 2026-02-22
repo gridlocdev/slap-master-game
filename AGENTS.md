@@ -1,5 +1,6 @@
 ## Development Mode
 
+- This is a game written in Babylon.js, with TypeScript and Vite.
 - Use pnpm commands for all package management tasks, including installing dependencies and running scripts
 - Use composition over inheritance for game objects
 - Keep game state in plain objects, separate from Babylon.js classes
