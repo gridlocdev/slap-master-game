@@ -11,7 +11,7 @@ import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, StackPanel } fro
 import type { AbilityType, GameState } from '../types.ts';
 import type { PlayerMeshes } from '../objects/player.ts';
 import { applyAbilityVisual } from '../objects/player.ts';
-import { isKeyJustPressed, isAnyGamepadSelectJustPressed, isGamepadBJustPressed } from '../input.ts';
+import { isKeyJustPressed, isAnyGamepadSelectJustPressed, isGamepadBJustPressed, isGamepadXJustPressed } from '../input.ts';
 import {
   createInputAssignUI, updateInputAssignUI, destroyInputAssignUI,
   getP1GamepadIndex, getP2GamepadIndex, isP2Unassigned,
@@ -811,7 +811,7 @@ function handleGamepadSelection(panel: PlayerSelectionPanel, padIdx: number): vo
   const dpadR = gp.buttons[15]?.pressed ?? false;
 
   if (panel.confirmed) {
-    if (gp.buttons[1]?.pressed) {
+    if (isGamepadBJustPressed(padIdx)) {
       unconfirmPanel(panel);
     }
     prevStickX[padIdx] = gp.axes[0] ?? 0;
@@ -837,7 +837,7 @@ function handleGamepadSelection(panel: PlayerSelectionPanel, padIdx: number): vo
   prevDpadLeft[padIdx] = dpadL;
   prevDpadRight[padIdx] = dpadR;
 
-  if (gp.buttons[2]?.pressed) {
+  if (isGamepadXJustPressed(padIdx)) {
     confirmPanel(panel);
   }
 }

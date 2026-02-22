@@ -161,6 +161,10 @@ export function isGamepadBJustPressed(padIndex: number): boolean {
   return buttonJustB.has(padIndex);
 }
 
+export function isGamepadXJustPressed(padIndex: number): boolean {
+  return buttonJustX.has(padIndex);
+}
+
 export function isAnyGamepadSelectJustPressed(): boolean {
   return buttonJustSelect.size > 0;
 }
