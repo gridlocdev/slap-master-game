@@ -53,18 +53,18 @@ export function createMainMenuUI(scene: Scene): MainMenuUI {
   buttonRow.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
   buttonRow.top = '-15%';
   buttonRow.adaptWidthToChildren = true;
-  buttonRow.height = '60px';
+  buttonRow.height = '70px';
   ui.addControl(buttonRow);
 
   const buttons: MenuButton[] = [];
   for (const item of MENU_ITEMS) {
     const wrapper = new Rectangle(`menuBtnWrap_${item.key}`);
-    wrapper.width = '190px';
+    wrapper.width = '220px';
     wrapper.height = 1;
     wrapper.thickness = 0;
     wrapper.background = '#00000000';
-    wrapper.paddingLeft = '6px';
-    wrapper.paddingRight = '6px';
+    wrapper.paddingLeft = '8px';
+    wrapper.paddingRight = '8px';
     buttonRow.addControl(wrapper);
 
     const rect = new Rectangle(`menuBtn_${item.key}`);

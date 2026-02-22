@@ -225,7 +225,7 @@ export const SELECTION_FLOOR_COLOR: Color3Tuple = [0.12, 0.12, 0.2];
 
 // Main menu
 export const MENU_TITLE_FONT_SIZE = 90;
-export const MENU_BUTTON_FONT_SIZE = 18;
+export const MENU_BUTTON_FONT_SIZE = 22;
 export const MENU_STICK_THRESHOLD = 0.5;
 
 // Input assignment overlay

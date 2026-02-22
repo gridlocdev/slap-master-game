@@ -65,7 +65,7 @@ const RANDOM_LABEL = 'RANDOM';
 const CARD_COUNT = ABILITIES.length + 1;
 
 // Card center X positions relative to screen center (4 cards × 180px = 720px total)
-const CARD_CENTER_X = [-270, -90, 90, 270];
+const CARD_CENTER_X = [-315, -105, 105, 315];
 const CURSOR_P1_OFFSET = -25;
 const CURSOR_P2_OFFSET = 25;
 
@@ -434,7 +434,7 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   // Controls hint bar
   const controlsBar = new Rectangle('controlsBar');
   controlsBar.width = 1;
-  controlsBar.height = '25%';
+  controlsBar.height = '30%';
   controlsBar.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
   controlsBar.thickness = 0;
   controlsBar.background = '#0a0a18';
@@ -449,10 +449,10 @@ export function createSelectionUI(scene: Scene): SelectionUI {
     { text: 'select' },
   ];
   const p1Row = createIconRow(p1Items, {
-    iconSize: ICON_SIZE.sm,
-    fontSize: 14,
+    iconSize: ICON_SIZE.md,
+    fontSize: 18,
     color: P1_HUD_COLOR,
-    gap: 2,
+    gap: 3,
     name: 'ctrlLeftRow',
   });
   p1Row.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -468,10 +468,10 @@ export function createSelectionUI(scene: Scene): SelectionUI {
     { text: 'select' },
   ];
   const p2Row = createIconRow(p2Items, {
-    iconSize: ICON_SIZE.sm,
-    fontSize: 14,
+    iconSize: ICON_SIZE.md,
+    fontSize: 18,
     color: P2_HUD_COLOR,
-    gap: 2,
+    gap: 3,
     name: 'ctrlRightRow',
   });
   p2Row.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
@@ -497,10 +497,10 @@ export function createSelectionUI(scene: Scene): SelectionUI {
     { text: 'back' },
   ];
   const centerRow = createIconRow(centerItems, {
-    iconSize: ICON_SIZE.sm,
-    fontSize: 12,
+    iconSize: ICON_SIZE.md,
+    fontSize: 16,
     color: '#8888aa',
-    gap: 2,
+    gap: 3,
     name: 'ctrlCenterRow',
   });
   centerRow.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
@@ -529,8 +529,8 @@ function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPane
 
   // Player tag (P1/P2 badge) — top corner
   const playerTag = new Rectangle(`playerTag_${idx}`);
-  playerTag.width = '100px';
-  playerTag.height = '48px';
+  playerTag.width = '120px';
+  playerTag.height = '56px';
   playerTag.background = '#000000cc';
   playerTag.thickness = 3;
   playerTag.color = playerColor;
@@ -543,7 +543,7 @@ function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPane
   container.addControl(playerTag);
 
   const tagText = new TextBlock(`tagText_${idx}`, isP1 ? 'P1' : 'P2');
-  tagText.fontSize = 28;
+  tagText.fontSize = 34;
   tagText.fontFamily = 'monospace';
   tagText.fontWeight = 'bold';
   tagText.color = playerColor;
@@ -551,8 +551,8 @@ function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPane
 
   // "ABILITY" header + ability name + description — bottom bar
   const abilityHeader = new Rectangle(`abilityHeader_${idx}`);
-  abilityHeader.width = '340px';
-  abilityHeader.height = '95px';
+  abilityHeader.width = '380px';
+  abilityHeader.height = '110px';
   abilityHeader.background = '#000000cc';
   abilityHeader.thickness = 0;
   abilityHeader.horizontalAlignment = isP1 ? Control.HORIZONTAL_ALIGNMENT_LEFT : Control.HORIZONTAL_ALIGNMENT_RIGHT;
@@ -563,7 +563,7 @@ function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPane
   container.addControl(abilityHeader);
 
   const abilityLabel = new TextBlock(`abilityLabel_${idx}`, 'ABILITY');
-  abilityLabel.fontSize = 22;
+  abilityLabel.fontSize = 26;
   abilityLabel.fontFamily = 'monospace';
   abilityLabel.fontWeight = 'bold';
   abilityLabel.color = playerColor;
@@ -572,7 +572,7 @@ function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPane
   abilityHeader.addControl(abilityLabel);
 
   const abilityName = new TextBlock(`abilityName_${idx}`, '');
-  abilityName.fontSize = 18;
+  abilityName.fontSize = 22;
   abilityName.fontFamily = 'monospace';
   abilityName.color = '#ffffff';
   abilityName.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
@@ -581,7 +581,7 @@ function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPane
 
   // Description text — inside header box
   const abilityDesc = new TextBlock(`abilityDesc_${idx}`, '');
-  abilityDesc.fontSize = 14;
+  abilityDesc.fontSize = 16;
   abilityDesc.fontFamily = 'monospace';
   abilityDesc.color = '#ffffffaa';
   abilityDesc.textWrapping = true;
@@ -591,7 +591,7 @@ function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPane
 
   // Status (READY!) text
   const statusText = new TextBlock(`statusText_${idx}`, '');
-  statusText.fontSize = 40;
+  statusText.fontSize = 48;
   statusText.fontFamily = 'monospace';
   statusText.fontWeight = 'bold';
   statusText.color = '#44ff44';
@@ -616,8 +616,8 @@ function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPane
 
 function createPlayerCursor(ui: AdvancedDynamicTexture, label: string, color: string, xOffset: number): Rectangle {
   const cursor = new Rectangle(`cursor_${label}`);
-  cursor.width = '90px';
-  cursor.height = '72px';
+  cursor.width = '100px';
+  cursor.height = '80px';
   cursor.thickness = 0;
   cursor.background = '#00000000';
   cursor.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
@@ -628,7 +628,7 @@ function createPlayerCursor(ui: AdvancedDynamicTexture, label: string, color: st
   ui.addControl(cursor);
 
   const labelText = new TextBlock(`cursorLabel_${label}`, label);
-  labelText.fontSize = 28;
+  labelText.fontSize = 32;
   labelText.fontFamily = 'monospace';
   labelText.fontWeight = 'bold';
   labelText.color = color;
@@ -651,7 +651,7 @@ function createPlayerCursor(ui: AdvancedDynamicTexture, label: string, color: st
 
 function createAbilityCard(parent: StackPanel, idx: number, key: string, label: string, style: { bg: string; border: string }, isRandom: boolean): CardUI {
   const wrapper = new Rectangle(`cardWrapper_${idx}`);
-  wrapper.width = '180px';
+  wrapper.width = '210px';
   wrapper.height = 1;
   wrapper.thickness = 0;
   wrapper.background = '#00000000';
@@ -671,7 +671,7 @@ function createAbilityCard(parent: StackPanel, idx: number, key: string, label: 
   // Dark footer strip for text contrast
   const footer = new Rectangle(`cardFooter_${idx}`);
   footer.width = 1;
-  footer.height = '36px';
+  footer.height = '42px';
   footer.background = '#00000066';
   footer.thickness = 0;
   footer.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
@@ -681,7 +681,7 @@ function createAbilityCard(parent: StackPanel, idx: number, key: string, label: 
   const iconArea = new Rectangle(`cardIconArea_${idx}`);
   iconArea.width = 1;
   iconArea.height = 1;
-  iconArea.paddingBottom = '36px';
+  iconArea.paddingBottom = '42px';
   iconArea.thickness = 0;
   iconArea.background = '#00000000';
   iconArea.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
@@ -699,7 +699,7 @@ function createAbilityCard(parent: StackPanel, idx: number, key: string, label: 
   iconArea.addControl(icon);
 
   const nameText = new TextBlock(`cardName_${idx}`, label);
-  nameText.fontSize = 16;
+  nameText.fontSize = 18;
   nameText.fontFamily = 'monospace';
   nameText.fontWeight = 'bold';
   nameText.color = '#ffffff';

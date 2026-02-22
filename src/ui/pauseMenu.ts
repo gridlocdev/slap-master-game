@@ -42,8 +42,8 @@ export function createPauseMenuUI(scene: Scene): PauseMenuUI {
 
   // Centered panel
   const panel = new Rectangle('pausePanel');
-  panel.width = '400px';
-  panel.height = '320px';
+  panel.width = '500px';
+  panel.height = '400px';
   panel.thickness = 2;
   panel.color = '#555577';
   panel.cornerRadius = 12;
@@ -52,7 +52,7 @@ export function createPauseMenuUI(scene: Scene): PauseMenuUI {
 
   // "PAUSED" title
   const title = new TextBlock('pauseTitle', 'PAUSED');
-  title.fontSize = 48;
+  title.fontSize = 56;
   title.fontFamily = 'monospace';
   title.fontWeight = 'bold';
   title.color = '#ffffff';
@@ -60,23 +60,23 @@ export function createPauseMenuUI(scene: Scene): PauseMenuUI {
   title.outlineColor = '#000000';
   title.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   title.top = '20px';
-  title.height = '70px';
+  title.height = '80px';
   panel.addControl(title);
 
   // Button stack
   const buttonStack = new StackPanel('pauseButtonStack');
   buttonStack.isVertical = true;
   buttonStack.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-  buttonStack.top = '-20px';
+  buttonStack.top = '-24px';
   buttonStack.adaptHeightToChildren = true;
-  buttonStack.width = '360px';
+  buttonStack.width = '450px';
   panel.addControl(buttonStack);
 
   const buttons: PauseButton[] = [];
   for (const item of PAUSE_ITEMS) {
     const wrapper = new Rectangle(`pauseBtnWrap_${item.key}`);
     wrapper.width = 1;
-    wrapper.height = '44px';
+    wrapper.height = '56px';
     wrapper.thickness = 0;
     wrapper.background = '#00000000';
     wrapper.paddingTop = '4px';
@@ -93,7 +93,7 @@ export function createPauseMenuUI(scene: Scene): PauseMenuUI {
     wrapper.addControl(rect);
 
     const label = new TextBlock(`pauseLabel_${item.key}`, item.label);
-    label.fontSize = 18;
+    label.fontSize = 22;
     label.fontFamily = 'monospace';
     label.fontWeight = 'bold';
     label.color = '#ffffff';

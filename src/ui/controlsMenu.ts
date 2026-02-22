@@ -14,15 +14,15 @@ export interface ControlsMenuUI {
   ui: AdvancedDynamicTexture;
 }
 
-const ICON = ICON_SIZE.sm;
-const FONT = 13;
-const ROW_H = `${ICON + 4}px`;
-const COL_W = '340px';
+const ICON = ICON_SIZE.lg;
+const FONT = 20;
+const ROW_H = `${ICON + 6}px`;
+const COL_W = '440px';
 
 function controlRow(label: string, items: IconRowItem[]): StackPanel {
   return createIconRow(
     [{ text: label }, ...items],
-    { iconSize: ICON, fontSize: FONT, color: '#ffffff', gap: 2 },
+    { iconSize: ICON, fontSize: FONT, color: '#ffffff', gap: 4 },
   );
 }
 
@@ -33,7 +33,7 @@ function sectionLabel(text: string, color = '#aaaaaa'): TextBlock {
   tb.fontWeight = 'bold';
   tb.color = color;
   tb.height = ROW_H;
-  tb.paddingTop = '4px';
+  tb.paddingTop = '6px';
   return tb;
 }
 
@@ -51,8 +51,8 @@ export function createControlsMenu(scene: Scene): ControlsMenuUI {
 
   // Centered panel
   const panel = new Rectangle('ctrlPanel');
-  panel.width = '720px';
-  panel.height = '480px';
+  panel.width = '940px';
+  panel.height = '700px';
   panel.thickness = 2;
   panel.color = '#555577';
   panel.cornerRadius = 12;
@@ -61,24 +61,24 @@ export function createControlsMenu(scene: Scene): ControlsMenuUI {
 
   // Title
   const title = new TextBlock('ctrlTitle', 'CONTROLS');
-  title.fontSize = 40;
+  title.fontSize = 52;
   title.fontFamily = 'monospace';
   title.fontWeight = 'bold';
   title.color = '#ffffff';
   title.outlineWidth = 4;
   title.outlineColor = '#000000';
   title.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-  title.top = '14px';
-  title.height = '54px';
+  title.top = '16px';
+  title.height = '68px';
   panel.addControl(title);
 
   // Two-column layout
   const columnsRow = new StackPanel('ctrlColumns');
   columnsRow.isVertical = false;
   columnsRow.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-  columnsRow.top = '70px';
-  columnsRow.height = '370px';
-  columnsRow.width = '700px';
+  columnsRow.top = '86px';
+  columnsRow.height = '560px';
+  columnsRow.width = '920px';
   panel.addControl(columnsRow);
 
   // ---- Keyboard column ----
@@ -86,13 +86,13 @@ export function createControlsMenu(scene: Scene): ControlsMenuUI {
   kbCol.isVertical = true;
   kbCol.width = COL_W;
   kbCol.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-  kbCol.paddingLeft = '16px';
+  kbCol.paddingLeft = '20px';
   columnsRow.addControl(kbCol);
 
   // KB header
   const kbHeader = createIconRow(
     [{ icon: KB_ICONS.device }, { text: ' Keyboard' }],
-    { iconSize: ICON, fontSize: 16, color: '#ffffff', gap: 4 },
+    { iconSize: ICON, fontSize: 24, color: '#ffffff', gap: 6 },
   );
   kbCol.addControl(kbHeader);
 
@@ -127,13 +127,13 @@ export function createControlsMenu(scene: Scene): ControlsMenuUI {
   gpCol.isVertical = true;
   gpCol.width = COL_W;
   gpCol.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-  gpCol.paddingLeft = '16px';
+  gpCol.paddingLeft = '20px';
   columnsRow.addControl(gpCol);
 
   // GP header
   const gpHeader = createIconRow(
     [{ icon: GP_ICONS.device }, { text: ' Gamepad' }],
-    { iconSize: ICON, fontSize: 16, color: '#ffffff', gap: 4 },
+    { iconSize: ICON, fontSize: 24, color: '#ffffff', gap: 6 },
   );
   gpCol.addControl(gpHeader);
 
@@ -164,10 +164,10 @@ export function createControlsMenu(scene: Scene): ControlsMenuUI {
       { icon: GP_ICONS.b },
       { text: ' = Close' },
     ],
-    { iconSize: ICON, fontSize: FONT, color: '#888888', gap: 2 },
+    { iconSize: ICON_SIZE.md, fontSize: 16, color: '#888888', gap: 4 },
   );
   hint.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-  hint.top = '-12px';
+  hint.top = '-16px';
   panel.addControl(hint);
 
   return { ui };
