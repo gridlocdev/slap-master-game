@@ -6,11 +6,11 @@ import {
 } from '../constants.ts';
 
 const MENU_ITEMS = [
-  { key: 'local', label: 'Local Multiplayer', bg: '#2d5a1e', border: '#33cc33' },
-  { key: 'ai', label: 'vs AI', bg: '#1e2d5a', border: '#4488ff' },
-  { key: 'controls', label: 'Controls', bg: '#5a3a1e', border: '#ff8833' },
-  { key: 'settings', label: 'Settings', bg: '#3a1e5a', border: '#8844cc' },
-  { key: 'quit', label: 'Quit Game', bg: '#5a1e1e', border: '#ff4444' },
+  { key: 'local', label: 'Local Multiplayer', bg: '#2d5a1e', border: '#33cc33', width: '290px' },
+  { key: 'ai', label: 'vs AI', bg: '#1e2d5a', border: '#4488ff', width: '160px' },
+  { key: 'controls', label: 'Controls', bg: '#5a3a1e', border: '#ff8833', width: '200px' },
+  { key: 'settings', label: 'Settings', bg: '#3a1e5a', border: '#8844cc', width: '200px' },
+  { key: 'quit', label: 'Quit Game', bg: '#5a1e1e', border: '#ff4444', width: '220px' },
 ] as const;
 
 interface MenuButton {
@@ -59,7 +59,7 @@ export function createMainMenuUI(scene: Scene): MainMenuUI {
   const buttons: MenuButton[] = [];
   for (const item of MENU_ITEMS) {
     const wrapper = new Rectangle(`menuBtnWrap_${item.key}`);
-    wrapper.width = '220px';
+    wrapper.width = item.width;
     wrapper.height = 1;
     wrapper.thickness = 0;
     wrapper.background = '#00000000';
