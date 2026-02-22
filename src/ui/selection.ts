@@ -24,7 +24,6 @@ import {
   GP_SEL_CYCLE, GP_SEL_CONFIRM, GP_SEL_BACK,
 } from './inputIcons.ts';
 import { createIconRow, iconsFromKeys, ICON_SIZE } from './iconRow.ts';
-import type { IconRowItem } from './iconRow.ts';
 import {
   PLAYER_RADIUS, HAND_RADIUS, HAND_OFFSET,
   P1_BODY_COLOR, P1_HAND_COLOR,
@@ -340,6 +339,10 @@ export interface SelectionUI {
   stage: SelectionStage;
   p1Cursor: Rectangle;
   p2Cursor: Rectangle;
+  p1KbRow: StackPanel;
+  p1GpRow: StackPanel;
+  p2KbRow: StackPanel;
+  p2GpRow: StackPanel;
   inputAssignUI: InputAssignUI | null;
 }
 
@@ -440,78 +443,95 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   controlsBar.background = '#0a0a18';
   bottomContainer.addControl(controlsBar);
 
-  // P1 controls (left-aligned): icon row
-  const p1Items: IconRowItem[] = [
-    { text: 'P1:' },
+  // P1 keyboard controls (left-aligned)
+  const p1KbRow = createIconRow([
+    { text: 'P1:  ' },
     ...iconsFromKeys(P1_SEL_CYCLE, KB_ICONS),
     { text: 'cycle' },
+    { text: '   ' },
     ...iconsFromKeys(P1_SEL_CONFIRM, KB_ICONS),
     { text: 'select' },
-  ];
-  const p1Row = createIconRow(p1Items, {
-    iconSize: ICON_SIZE.md,
-    fontSize: 18,
-    color: P1_HUD_COLOR,
-    gap: 3,
-    name: 'ctrlLeftRow',
-  });
-  p1Row.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-  p1Row.left = '20px';
-  controlsBar.addControl(p1Row);
-
-  // P2 controls (right-aligned): icon row
-  const p2Items: IconRowItem[] = [
-    { text: 'P2:' },
-    ...iconsFromKeys(P2_SEL_CYCLE, KB_ICONS),
-    { text: 'cycle' },
-    ...iconsFromKeys(P2_SEL_CONFIRM, KB_ICONS),
-    { text: 'select' },
-  ];
-  const p2Row = createIconRow(p2Items, {
-    iconSize: ICON_SIZE.md,
-    fontSize: 18,
-    color: P2_HUD_COLOR,
-    gap: 3,
-    name: 'ctrlRightRow',
-  });
-  p2Row.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-  p2Row.left = '-20px';
-  controlsBar.addControl(p2Row);
-
-  // Center: menu/back hint + input setup + gamepad hints
-  const centerItems: IconRowItem[] = [
+    { text: '   ' },
     { icon: KB_ICONS.escape },
-    { text: '/' },
-    ...iconsFromKeys(GP_SEL_BACK, GP_ICONS),
-    { text: '= menu  ' },
+    { text: 'back' },
+    { text: '   ' },
     { icon: KB_ICONS.tilde },
-    { text: '/' },
-    { icon: GP_ICONS.back },
-    { text: '= Input Setup  ' },
-    { text: 'Gamepad:' },
+    { text: 'setup' },
+  ], { iconSize: ICON_SIZE.md, fontSize: 18, color: P1_HUD_COLOR, gap: 3, name: 'ctrlP1Kb' });
+  p1KbRow.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+  p1KbRow.left = '20px';
+  controlsBar.addControl(p1KbRow);
+
+  // P1 gamepad controls (left-aligned)
+  const p1GpRow = createIconRow([
+    { text: 'P1:  ' },
     ...iconsFromKeys(GP_SEL_CYCLE, GP_ICONS),
     { text: 'cycle' },
+    { text: '   ' },
     ...iconsFromKeys(GP_SEL_CONFIRM, GP_ICONS),
     { text: 'select' },
+    { text: '   ' },
     ...iconsFromKeys(GP_SEL_BACK, GP_ICONS),
     { text: 'back' },
-  ];
-  const centerRow = createIconRow(centerItems, {
-    iconSize: ICON_SIZE.md,
-    fontSize: 16,
-    color: '#8888aa',
-    gap: 3,
-    name: 'ctrlCenterRow',
-  });
-  centerRow.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-  centerRow.top = '-2px';
-  controlsBar.addControl(centerRow);
+    { text: '   ' },
+    { icon: GP_ICONS.back },
+    { text: 'setup' },
+  ], { iconSize: ICON_SIZE.md, fontSize: 18, color: P1_HUD_COLOR, gap: 3, name: 'ctrlP1Gp' });
+  p1GpRow.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+  p1GpRow.left = '20px';
+  controlsBar.addControl(p1GpRow);
+
+  // P2 keyboard controls (right-aligned)
+  const p2KbRow = createIconRow([
+    { text: 'P2:  ' },
+    ...iconsFromKeys(P2_SEL_CYCLE, KB_ICONS),
+    { text: 'cycle' },
+    { text: '   ' },
+    ...iconsFromKeys(P2_SEL_CONFIRM, KB_ICONS),
+    { text: 'select' },
+    { text: '   ' },
+    { icon: KB_ICONS.backspace },
+    { text: 'back' },
+    { text: '   ' },
+    { icon: KB_ICONS.tilde },
+    { text: 'setup' },
+  ], { iconSize: ICON_SIZE.md, fontSize: 18, color: P2_HUD_COLOR, gap: 3, name: 'ctrlP2Kb' });
+  p2KbRow.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+  p2KbRow.left = '-20px';
+  controlsBar.addControl(p2KbRow);
+
+  // P2 gamepad controls (right-aligned)
+  const p2GpRow = createIconRow([
+    { text: 'P2:  ' },
+    ...iconsFromKeys(GP_SEL_CYCLE, GP_ICONS),
+    { text: 'cycle' },
+    { text: '   ' },
+    ...iconsFromKeys(GP_SEL_CONFIRM, GP_ICONS),
+    { text: 'select' },
+    { text: '   ' },
+    ...iconsFromKeys(GP_SEL_BACK, GP_ICONS),
+    { text: 'back' },
+    { text: '   ' },
+    { icon: GP_ICONS.back },
+    { text: 'setup' },
+  ], { iconSize: ICON_SIZE.md, fontSize: 18, color: P2_HUD_COLOR, gap: 3, name: 'ctrlP2Gp' });
+  p2GpRow.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+  p2GpRow.left = '-20px';
+  controlsBar.addControl(p2GpRow);
+
+  // Set initial visibility based on current input assignment
+  const p1IsGamepad = getP1GamepadIndex() !== null;
+  p1KbRow.isVisible = !p1IsGamepad;
+  p1GpRow.isVisible = p1IsGamepad;
+  const p2IsGamepad = getP2GamepadIndex() !== null;
+  p2KbRow.isVisible = !p2IsGamepad;
+  p2GpRow.isVisible = p2IsGamepad;
 
   // --- Root-level player cursors (above all containers, no clipping) ---
   const p1Cursor = createPlayerCursor(ui, 'P1', P1_HUD_COLOR, CURSOR_P1_OFFSET);
   const p2Cursor = createPlayerCursor(ui, 'P2', P2_HUD_COLOR, CURSOR_P2_OFFSET);
 
-  return { ui, panels: [p1Panel, p2Panel], cards, stage, p1Cursor, p2Cursor, inputAssignUI: null };
+  return { ui, panels: [p1Panel, p2Panel], cards, stage, p1Cursor, p2Cursor, p1KbRow, p1GpRow, p2KbRow, p2GpRow, inputAssignUI: null };
 }
 
 function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPanel {
@@ -739,6 +759,14 @@ export function updateSelection(selUI: SelectionUI, state: GameState): 'ready' |
     }
     return null;
   }
+
+  // Update control hint visibility based on current input assignment
+  const p1Gp = getP1GamepadIndex() !== null;
+  selUI.p1KbRow.isVisible = !p1Gp;
+  selUI.p1GpRow.isVisible = p1Gp;
+  const p2Gp = getP2GamepadIndex() !== null;
+  selUI.p2KbRow.isVisible = !p2Gp;
+  selUI.p2GpRow.isVisible = p2Gp;
 
   // Open overlay on Backquote or any gamepad Select
   if (isKeyJustPressed('Backquote') || isAnyGamepadSelectJustPressed()) {
