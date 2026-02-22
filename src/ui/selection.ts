@@ -29,7 +29,7 @@ import {
   P1_BODY_COLOR, P1_HAND_COLOR,
   P2_BODY_COLOR, P2_HAND_COLOR,
   CHILD_SCALE, MELON_BODY_Y_SCALE,
-  P1_HUD_COLOR, P2_HUD_COLOR,
+  P1_HUD_COLOR, P2_HUD_COLOR, AI_HUD_COLOR,
   STAGE_CAM_POS as STAGE_CAM_POS_TUPLE,
   STAGE_CAM_TARGET as STAGE_CAM_TARGET_TUPLE,
   P1_STAGE_X, P2_STAGE_X, PLAYER_STAGE_Z, PLAYER_STAGE_Y,
@@ -42,6 +42,7 @@ import {
   HEADBAND_BAND_Y_FACTOR, HEADBAND_KNOT_DIST_FACTOR, HEADBAND_SPLAY_ANGLES,
   EYE_DIST_FACTOR, EYE_FORWARD_FACTOR, EYE_Y_FACTOR, PUPIL_FORWARD_FACTOR,
 } from '../constants.ts';
+import type { GameMode } from '../types.ts';
 
 const ABILITIES: AbilityType[] = ['burrito', 'child', 'melon'];
 
@@ -332,6 +333,10 @@ export function setArenaMeshesVisible(scene: Scene, visible: boolean): void {
 
 // --- 2D GUI ---
 
+export interface SelectionOptions {
+  mode: GameMode;
+}
+
 export interface SelectionUI {
   ui: AdvancedDynamicTexture;
   panels: [PlayerSelectionPanel, PlayerSelectionPanel];
@@ -344,6 +349,7 @@ export interface SelectionUI {
   p2KbRow: StackPanel;
   p2GpRow: StackPanel;
   inputAssignUI: InputAssignUI | null;
+  mode: GameMode;
 }
 
 interface PlayerSelectionPanel {
@@ -363,7 +369,8 @@ interface CardUI {
   nameText: TextBlock;
 }
 
-export function createSelectionUI(scene: Scene): SelectionUI {
+export function createSelectionUI(scene: Scene, options: SelectionOptions = { mode: 'local' }): SelectionUI {
+  const mode = options.mode;
   const ui = AdvancedDynamicTexture.CreateFullscreenUI('selectionUI', true, scene);
   const stage = createSelectionStage(scene);
 
@@ -376,8 +383,8 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   topContainer.background = '#00000000';
   ui.addControl(topContainer);
 
-  const p1Panel = createPreviewPanel(topContainer, 0);
-  const p2Panel = createPreviewPanel(topContainer, 1);
+  const p1Panel = createPreviewPanel(topContainer, 0, mode);
+  const p2Panel = createPreviewPanel(topContainer, 1, mode);
 
   // VS text centered
   const vsText = new TextBlock('vsText', 'VS');
@@ -481,43 +488,51 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   p1GpRow.left = '20px';
   controlsBar.addControl(p1GpRow);
 
-  // P2 keyboard controls (right-aligned)
-  const p2KbRow = createIconRow([
-    { text: 'P2:  ' },
-    ...iconsFromKeys(P2_SEL_CYCLE, KB_ICONS),
-    { text: 'cycle' },
-    { text: '   ' },
-    ...iconsFromKeys(P2_SEL_CONFIRM, KB_ICONS),
-    { text: 'select' },
-    { text: '   ' },
-    { icon: KB_ICONS.backspace },
-    { text: 'back' },
-    { text: '   ' },
-    { icon: KB_ICONS.shift },
-    { text: 'setup' },
-  ], { iconSize: ICON_SIZE.md, fontSize: 18, color: P2_HUD_COLOR, gap: 3, name: 'ctrlP2Kb' });
-  p2KbRow.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-  p2KbRow.left = '-20px';
-  controlsBar.addControl(p2KbRow);
+  // P2 keyboard controls (right-aligned) — hidden in AI mode
+  let p2KbRow: StackPanel;
+  let p2GpRow: StackPanel;
+  if (mode === 'ai') {
+    p2KbRow = new StackPanel('ctrlP2Kb');
+    p2KbRow.isVisible = false;
+    p2GpRow = new StackPanel('ctrlP2Gp');
+    p2GpRow.isVisible = false;
+  } else {
+    p2KbRow = createIconRow([
+      { text: 'P2:  ' },
+      ...iconsFromKeys(P2_SEL_CYCLE, KB_ICONS),
+      { text: 'cycle' },
+      { text: '   ' },
+      ...iconsFromKeys(P2_SEL_CONFIRM, KB_ICONS),
+      { text: 'select' },
+      { text: '   ' },
+      { icon: KB_ICONS.backspace },
+      { text: 'back' },
+      { text: '   ' },
+      { icon: KB_ICONS.shift },
+      { text: 'setup' },
+    ], { iconSize: ICON_SIZE.md, fontSize: 18, color: P2_HUD_COLOR, gap: 3, name: 'ctrlP2Kb' });
+    p2KbRow.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    p2KbRow.left = '-20px';
+    controlsBar.addControl(p2KbRow);
 
-  // P2 gamepad controls (right-aligned)
-  const p2GpRow = createIconRow([
-    { text: 'P2:  ' },
-    ...iconsFromKeys(GP_SEL_CYCLE, GP_ICONS),
-    { text: 'cycle' },
-    { text: '   ' },
-    ...iconsFromKeys(GP_SEL_CONFIRM, GP_ICONS),
-    { text: 'select' },
-    { text: '   ' },
-    ...iconsFromKeys(GP_SEL_BACK, GP_ICONS),
-    { text: 'back' },
-    { text: '   ' },
-    { icon: GP_ICONS.back },
-    { text: 'setup' },
-  ], { iconSize: ICON_SIZE.md, fontSize: 18, color: P2_HUD_COLOR, gap: 3, name: 'ctrlP2Gp' });
-  p2GpRow.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-  p2GpRow.left = '-20px';
-  controlsBar.addControl(p2GpRow);
+    p2GpRow = createIconRow([
+      { text: 'P2:  ' },
+      ...iconsFromKeys(GP_SEL_CYCLE, GP_ICONS),
+      { text: 'cycle' },
+      { text: '   ' },
+      ...iconsFromKeys(GP_SEL_CONFIRM, GP_ICONS),
+      { text: 'select' },
+      { text: '   ' },
+      ...iconsFromKeys(GP_SEL_BACK, GP_ICONS),
+      { text: 'back' },
+      { text: '   ' },
+      { icon: GP_ICONS.back },
+      { text: 'setup' },
+    ], { iconSize: ICON_SIZE.md, fontSize: 18, color: P2_HUD_COLOR, gap: 3, name: 'ctrlP2Gp' });
+    p2GpRow.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    p2GpRow.left = '-20px';
+    controlsBar.addControl(p2GpRow);
+  }
 
   // Set initial visibility based on current input assignment
   const p1IsGamepad = getP1GamepadIndex() !== null;
@@ -529,14 +544,17 @@ export function createSelectionUI(scene: Scene): SelectionUI {
 
   // --- Root-level player cursors (above all containers, no clipping) ---
   const p1Cursor = createPlayerCursor(ui, 'P1', P1_HUD_COLOR, CURSOR_P1_OFFSET);
-  const p2Cursor = createPlayerCursor(ui, 'P2', P2_HUD_COLOR, CURSOR_P2_OFFSET);
+  const p2Label = mode === 'ai' ? 'AI' : 'P2';
+  const p2Color = mode === 'ai' ? AI_HUD_COLOR : P2_HUD_COLOR;
+  const p2Cursor = createPlayerCursor(ui, p2Label, p2Color, CURSOR_P2_OFFSET);
 
-  return { ui, panels: [p1Panel, p2Panel], cards, stage, p1Cursor, p2Cursor, p1KbRow, p1GpRow, p2KbRow, p2GpRow, inputAssignUI: null };
+  return { ui, panels: [p1Panel, p2Panel], cards, stage, p1Cursor, p2Cursor, p1KbRow, p1GpRow, p2KbRow, p2GpRow, inputAssignUI: null, mode };
 }
 
-function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPanel {
+function createPreviewPanel(parent: Rectangle, idx: number, mode: GameMode = 'local'): PlayerSelectionPanel {
   const isP1 = idx === 0;
-  const playerColor = isP1 ? P1_HUD_COLOR : P2_HUD_COLOR;
+  const isAI = !isP1 && mode === 'ai';
+  const playerColor = isP1 ? P1_HUD_COLOR : (isAI ? AI_HUD_COLOR : P2_HUD_COLOR);
 
   // Transparent container — 3D renders behind it
   const container = new Rectangle(`previewPanel_${idx}`);
@@ -562,7 +580,7 @@ function createPreviewPanel(parent: Rectangle, idx: number): PlayerSelectionPane
   playerTag.zIndex = 5;
   container.addControl(playerTag);
 
-  const tagText = new TextBlock(`tagText_${idx}`, isP1 ? 'P1' : 'P2');
+  const tagText = new TextBlock(`tagText_${idx}`, isP1 ? 'P1' : (isAI ? 'AI' : 'P2'));
   tagText.fontSize = 34;
   tagText.fontFamily = 'monospace';
   tagText.fontWeight = 'bold';
@@ -764,49 +782,59 @@ export function updateSelection(selUI: SelectionUI, state: GameState): 'ready' |
   const p1Gp = getP1GamepadIndex() !== null;
   selUI.p1KbRow.isVisible = !p1Gp;
   selUI.p1GpRow.isVisible = p1Gp;
-  const p2Gp = getP2GamepadIndex() !== null;
-  selUI.p2KbRow.isVisible = !p2Gp;
-  selUI.p2GpRow.isVisible = p2Gp;
-
-  // Open overlay on Shift or any gamepad Select
-  if (isShiftJustPressed() || isAnyGamepadSelectJustPressed()) {
-    const scene = selUI.ui.getScene()!;
-    selUI.inputAssignUI = createInputAssignUI(scene);
-    return null;
+  if (selUI.mode !== 'ai') {
+    const p2Gp = getP2GamepadIndex() !== null;
+    selUI.p2KbRow.isVisible = !p2Gp;
+    selUI.p2GpRow.isVisible = p2Gp;
   }
 
-  // Back to menu: Esc or gamepad B when neither player is confirmed
-  if (!selUI.panels[0].confirmed && !selUI.panels[1].confirmed) {
+  // Input assignment overlay — disabled in AI mode
+  if (selUI.mode !== 'ai') {
+    if (isShiftJustPressed() || isAnyGamepadSelectJustPressed()) {
+      const scene = selUI.ui.getScene()!;
+      selUI.inputAssignUI = createInputAssignUI(scene);
+      return null;
+    }
+  }
+
+  if (selUI.mode === 'ai') {
+    // AI mode: P1 controls both panels sequentially
+    const aiResult = updateSelectionAI(selUI);
+    if (aiResult === 'back') return 'back';
+  } else {
+    // Back to menu: Esc or gamepad B when neither player is confirmed
+    if (!selUI.panels[0].confirmed && !selUI.panels[1].confirmed) {
+      const p1Pad = getP1GamepadIndex();
+      const p2Pad = getP2GamepadIndex();
+      const gamepadBack = (p1Pad !== null && isGamepadBJustPressed(p1Pad))
+        || (p2Pad !== null && isGamepadBJustPressed(p2Pad));
+      if (isKeyJustPressed('Escape') || gamepadBack) {
+        return 'back';
+      }
+    }
+
+    // P1 controls: A/D cycle, C/V confirm, Escape unconfirm
+    handlePlayerSelection(selUI.panels[0], 'KeyA', 'KeyD', 'KeyC', 'KeyV', 'Escape');
+    // P2 controls: K/; cycle, ArrowLeft/ArrowRight confirm, Backspace unconfirm
+    handlePlayerSelection(selUI.panels[1], 'KeyK', 'Semicolon', 'ArrowLeft', 'ArrowRight', 'Backspace');
+
     const p1Pad = getP1GamepadIndex();
     const p2Pad = getP2GamepadIndex();
-    const gamepadBack = (p1Pad !== null && isGamepadBJustPressed(p1Pad))
-      || (p2Pad !== null && isGamepadBJustPressed(p2Pad));
-    if (isKeyJustPressed('Escape') || gamepadBack) {
-      return 'back';
-    }
-  }
-
-  // P1 controls: A/D cycle, C/V confirm, Escape unconfirm
-  handlePlayerSelection(selUI.panels[0], 'KeyA', 'KeyD', 'KeyC', 'KeyV', 'Escape');
-  // P2 controls: K/; cycle, ArrowLeft/ArrowRight confirm, Backspace unconfirm
-  handlePlayerSelection(selUI.panels[1], 'KeyK', 'Semicolon', 'ArrowLeft', 'ArrowRight', 'Backspace');
-
-  const p1Pad = getP1GamepadIndex();
-  const p2Pad = getP2GamepadIndex();
-  const solo = p1Pad !== null && isP2Unassigned();
-  if (p1Pad !== null) {
-    if (solo && selUI.panels[0].confirmed) {
-      // P1 confirmed in solo mode → gamepad controls P2's panel
-      if (!selUI.panels[1].confirmed && isGamepadBJustPressed(p1Pad)) {
-        unconfirmPanel(selUI.panels[0]); // B = back to own panel
+    const solo = p1Pad !== null && isP2Unassigned();
+    if (p1Pad !== null) {
+      if (solo && selUI.panels[0].confirmed) {
+        // P1 confirmed in solo mode → gamepad controls P2's panel
+        if (!selUI.panels[1].confirmed && isGamepadBJustPressed(p1Pad)) {
+          unconfirmPanel(selUI.panels[0]); // B = back to own panel
+        } else {
+          handleGamepadSelection(selUI.panels[1], p1Pad);
+        }
       } else {
-        handleGamepadSelection(selUI.panels[1], p1Pad);
+        handleGamepadSelection(selUI.panels[0], p1Pad);
       }
-    } else {
-      handleGamepadSelection(selUI.panels[0], p1Pad);
     }
+    if (p2Pad !== null) handleGamepadSelection(selUI.panels[1], p2Pad);
   }
-  if (p2Pad !== null) handleGamepadSelection(selUI.panels[1], p2Pad);
 
   // Position root-level cursors based on selected card index
   selUI.p1Cursor.left = `${CARD_CENTER_X[selUI.panels[0].selectedIndex] + CURSOR_P1_OFFSET}px`;
@@ -824,7 +852,8 @@ export function updateSelection(selUI: SelectionUI, state: GameState): 'ready' |
 
     if (p1Confirmed || p2Confirmed) {
       card.rect.thickness = 5;
-      card.rect.color = p1Confirmed ? P1_HUD_COLOR : P2_HUD_COLOR;
+      const p2Color = selUI.mode === 'ai' ? AI_HUD_COLOR : P2_HUD_COLOR;
+      card.rect.color = p1Confirmed ? P1_HUD_COLOR : p2Color;
     } else {
       card.rect.thickness = 3;
       card.rect.color = style.border;
@@ -866,6 +895,42 @@ export function updateSelection(selUI: SelectionUI, state: GameState): 'ready' |
   }
 
   return (selUI.panels[0].confirmed && selUI.panels[1].confirmed) ? 'ready' : null;
+}
+
+function updateSelectionAI(selUI: SelectionUI): 'ready' | 'back' | null {
+  const p1Panel = selUI.panels[0];
+  const aiPanel = selUI.panels[1];
+  const p1Pad = getP1GamepadIndex();
+
+  if (!p1Panel.confirmed) {
+    // P1 not confirmed → P1 keyboard drives panel 0
+    // Back: Escape when neither confirmed
+    if (!aiPanel.confirmed) {
+      const gamepadBack = p1Pad !== null && isGamepadBJustPressed(p1Pad);
+      if (isKeyJustPressed('Escape') || gamepadBack) {
+        return 'back';
+      }
+    }
+    handlePlayerSelection(p1Panel, 'KeyA', 'KeyD', 'KeyC', 'KeyV', 'Escape');
+    if (p1Pad !== null) handleGamepadSelection(p1Panel, p1Pad);
+  } else if (!aiPanel.confirmed) {
+    // P1 confirmed, AI not confirmed → P1 keyboard drives panel 1
+    // Escape unconfirms P1 (back to P1 panel)
+    if (isKeyJustPressed('Escape')) {
+      unconfirmPanel(p1Panel);
+    } else {
+      handlePlayerSelection(aiPanel, 'KeyA', 'KeyD', 'KeyC', 'KeyV', 'Escape');
+    }
+    if (p1Pad !== null) {
+      if (isGamepadBJustPressed(p1Pad)) {
+        unconfirmPanel(p1Panel);
+      } else {
+        handleGamepadSelection(aiPanel, p1Pad);
+      }
+    }
+  }
+
+  return null;
 }
 
 function handlePlayerSelection(

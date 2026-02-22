@@ -24,9 +24,11 @@ import { createPauseMenuUI, updatePauseMenu, destroyPauseMenu } from './ui/pause
 import type { PauseMenuUI } from './ui/pauseMenu.ts';
 import { createControlsMenu, updateControlsMenu, destroyControlsMenu } from './ui/controlsMenu.ts';
 import type { ControlsMenuUI } from './ui/controlsMenu.ts';
+import { createDifficultyMenu, updateDifficultyMenu, destroyDifficultyMenu } from './ui/difficultyMenu.ts';
+import type { DifficultyMenuUI } from './ui/difficultyMenu.ts';
 import { P1_KEYS, P2_KEYS, RESTART_DELAY } from './constants.ts';
 import { initDefaultAssignment, getP1GamepadIndex, getP2GamepadIndex } from './ui/inputAssign.ts';
-import type { AbilityType } from './types.ts';
+import type { AbilityType, AIDifficulty, GameMode } from './types.ts';
 import type { Vector3 } from '@babylonjs/core';
 
 const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
@@ -53,6 +55,12 @@ let countdownUI: CountdownUI | null = null;
 let isPaused = false;
 let pauseMenuUI: PauseMenuUI | null = null;
 let controlsUI: ControlsMenuUI | null = null;
+let difficultyUI: DifficultyMenuUI | null = null;
+let gameMode: GameMode = 'local';
+// Stored for future AI gameplay logic
+// @ts-expect-error written but not yet read — used once AI gameplay is implemented
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+let aiDifficulty: AIDifficulty = 'medium';
 
 // Enter menu mode
 setHudVisible(hud, false);
@@ -126,7 +134,7 @@ function handlePauseAction(action: string | null): void {
 function goToSelection(): void {
   state = createSelectionState();
   gamePhase = 'selecting';
-  selectionUI = createSelectionUI(scene);
+  selectionUI = createSelectionUI(scene, { mode: gameMode });
   if (countdownUI) {
     destroyCountdown(countdownUI);
     countdownUI = null;
@@ -167,15 +175,36 @@ engine.runRenderLoop(() => {
         destroyControlsMenu(controlsUI);
         controlsUI = null;
       }
+    } else if (difficultyUI) {
+      const result = updateDifficultyMenu(difficultyUI);
+      if (result === 'back') {
+        destroyDifficultyMenu(difficultyUI);
+        difficultyUI = null;
+        mainMenuUI = createMainMenuUI(scene);
+      } else if (result !== null) {
+        aiDifficulty = result;
+        gameMode = 'ai';
+        destroyDifficultyMenu(difficultyUI);
+        difficultyUI = null;
+        gamePhase = 'selecting';
+        selectionUI = createSelectionUI(scene, { mode: 'ai' });
+        setPlayerMeshesVisible(playerMeshes[0], true);
+        setPlayerMeshesVisible(playerMeshes[1], true);
+      }
     } else if (mainMenuUI) {
       const action = updateMainMenu(mainMenuUI);
       if (action === 'local') {
+        gameMode = 'local';
         destroyMainMenu(mainMenuUI);
         mainMenuUI = null;
         gamePhase = 'selecting';
-        selectionUI = createSelectionUI(scene);
+        selectionUI = createSelectionUI(scene, { mode: 'local' });
         setPlayerMeshesVisible(playerMeshes[0], true);
         setPlayerMeshesVisible(playerMeshes[1], true);
+      } else if (action === 'ai') {
+        destroyMainMenu(mainMenuUI);
+        mainMenuUI = null;
+        difficultyUI = createDifficultyMenu(scene);
       } else if (action === 'controls') {
         controlsUI = createControlsMenu(scene);
       }

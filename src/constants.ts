@@ -187,6 +187,7 @@ export const HUD_RESTART_COLOR = '#aaaaaa';
 export const HUD_CONTROLS_COLOR = '#8888aa';
 export const P1_HUD_COLOR = '#4488ff';
 export const P2_HUD_COLOR = '#ff4444';
+export const AI_HUD_COLOR = '#888888';
 export const HUD_WIN_TOP = '-60px';
 export const HUD_RESTART_TOP = '20px';
 export const HUD_SCORE_TOP = '70px';

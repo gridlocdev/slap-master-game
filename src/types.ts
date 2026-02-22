@@ -3,6 +3,9 @@ export interface Vec2 {
   y: number;
 }
 
+export type AIDifficulty = 'easy' | 'medium' | 'hard';
+export type GameMode = 'local' | 'ai';
+
 export type HandSide = 'left' | 'right';
 export type HandState = 'idle' | 'windup' | 'active' | 'recovery';
 
