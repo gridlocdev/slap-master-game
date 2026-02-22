@@ -18,6 +18,14 @@ import {
 } from './inputAssign.ts';
 import type { InputAssignUI } from './inputAssign.ts';
 import {
+  KB_ICONS, GP_ICONS,
+  P1_SEL_CYCLE, P1_SEL_CONFIRM,
+  P2_SEL_CYCLE, P2_SEL_CONFIRM,
+  GP_SEL_CYCLE, GP_SEL_CONFIRM, GP_SEL_BACK,
+} from './inputIcons.ts';
+import { createIconRow, iconsFromKeys, ICON_SIZE } from './iconRow.ts';
+import type { IconRowItem } from './iconRow.ts';
+import {
   PLAYER_RADIUS, HAND_RADIUS, HAND_OFFSET,
   P1_BODY_COLOR, P1_HAND_COLOR,
   P2_BODY_COLOR, P2_HAND_COLOR,
@@ -432,27 +440,68 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   controlsBar.background = '#0a0a18';
   bottomContainer.addControl(controlsBar);
 
-  const controlsLeft = new TextBlock('ctrlLeft', 'P1: A/D cycle, C/V select');
-  controlsLeft.fontSize = 16;
-  controlsLeft.color = P1_HUD_COLOR;
-  controlsLeft.fontFamily = 'monospace';
-  controlsLeft.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-  controlsLeft.left = '20px';
-  controlsBar.addControl(controlsLeft);
+  // P1 controls (left-aligned): icon row
+  const p1Items: IconRowItem[] = [
+    { text: 'P1:' },
+    ...iconsFromKeys(P1_SEL_CYCLE, KB_ICONS),
+    { text: 'cycle' },
+    ...iconsFromKeys(P1_SEL_CONFIRM, KB_ICONS),
+    { text: 'select' },
+  ];
+  const p1Row = createIconRow(p1Items, {
+    iconSize: ICON_SIZE.sm,
+    fontSize: 14,
+    color: P1_HUD_COLOR,
+    gap: 2,
+    name: 'ctrlLeftRow',
+  });
+  p1Row.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+  p1Row.left = '20px';
+  controlsBar.addControl(p1Row);
 
-  const controlsRight = new TextBlock('ctrlRight', 'P2: K/; cycle, \u2190/\u2192 select');
-  controlsRight.fontSize = 16;
-  controlsRight.color = P2_HUD_COLOR;
-  controlsRight.fontFamily = 'monospace';
-  controlsRight.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-  controlsRight.left = '-20px';
-  controlsBar.addControl(controlsRight);
+  // P2 controls (right-aligned): icon row
+  const p2Items: IconRowItem[] = [
+    { text: 'P2:' },
+    ...iconsFromKeys(P2_SEL_CYCLE, KB_ICONS),
+    { text: 'cycle' },
+    ...iconsFromKeys(P2_SEL_CONFIRM, KB_ICONS),
+    { text: 'select' },
+  ];
+  const p2Row = createIconRow(p2Items, {
+    iconSize: ICON_SIZE.sm,
+    fontSize: 14,
+    color: P2_HUD_COLOR,
+    gap: 2,
+    name: 'ctrlRightRow',
+  });
+  p2Row.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+  p2Row.left = '-20px';
+  controlsBar.addControl(p2Row);
 
-  const controlsCenter = new TextBlock('ctrlCenter', '` / Select = Input Setup  ·  Gamepad: Stick cycle, X select, B back');
-  controlsCenter.fontSize = 14;
-  controlsCenter.color = '#8888aa';
-  controlsCenter.fontFamily = 'monospace';
-  controlsBar.addControl(controlsCenter);
+  // Center: gamepad hints + tilde/back icon row
+  const centerItems: IconRowItem[] = [
+    { icon: KB_ICONS.tilde },
+    { text: '/' },
+    { icon: GP_ICONS.back },
+    { text: '= Input Setup  ' },
+    { text: 'Gamepad:' },
+    ...iconsFromKeys(GP_SEL_CYCLE, GP_ICONS),
+    { text: 'cycle' },
+    ...iconsFromKeys(GP_SEL_CONFIRM, GP_ICONS),
+    { text: 'select' },
+    ...iconsFromKeys(GP_SEL_BACK, GP_ICONS),
+    { text: 'back' },
+  ];
+  const centerRow = createIconRow(centerItems, {
+    iconSize: ICON_SIZE.sm,
+    fontSize: 12,
+    color: '#8888aa',
+    gap: 2,
+    name: 'ctrlCenterRow',
+  });
+  centerRow.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+  centerRow.top = '-2px';
+  controlsBar.addControl(centerRow);
 
   // --- Root-level player cursors (above all containers, no clipping) ---
   const p1Cursor = createPlayerCursor(ui, 'P1', P1_HUD_COLOR, CURSOR_P1_OFFSET);

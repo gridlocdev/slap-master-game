@@ -1,9 +1,9 @@
 import { Scene } from '@babylonjs/core';
-import { AdvancedDynamicTexture, TextBlock, Control } from '@babylonjs/gui';
+import { AdvancedDynamicTexture, TextBlock, Control, StackPanel } from '@babylonjs/gui';
 import type { GameState } from '../types.ts';
 import {
   HUD_WIN_FONT_SIZE, HUD_RESTART_FONT_SIZE, HUD_SCORE_FONT_SIZE,
-  HUD_LABEL_FONT_SIZE, HUD_COOLDOWN_FONT_SIZE, HUD_CONTROLS_FONT_SIZE,
+  HUD_COOLDOWN_FONT_SIZE, HUD_CONTROLS_FONT_SIZE,
   HUD_TEXT_COLOR, HUD_RESTART_COLOR, HUD_CONTROLS_COLOR,
   P1_HUD_COLOR, P2_HUD_COLOR,
   HUD_WIN_TOP, HUD_RESTART_TOP, HUD_SCORE_TOP,
@@ -11,6 +11,13 @@ import {
   HUD_OUTLINE_COLOR, HUD_WIN_OUTLINE_WIDTH, HUD_SCORE_OUTLINE_WIDTH,
   HUD_LIVE_SCORE_TOP, HUD_LIVE_SCORE_FONT_SIZE,
 } from '../constants.ts';
+import {
+  KB_ICONS,
+  P1_KB_MOVE, P1_KB_SLAP, P1_KB_ABILITY,
+  P2_KB_MOVE, P2_KB_SLAP, P2_KB_ABILITY,
+} from '../ui/inputIcons.ts';
+import { createIconRow, iconsFromKeys, ICON_SIZE } from '../ui/iconRow.ts';
+import type { IconRowItem } from '../ui/iconRow.ts';
 
 export interface HudElements {
   ui: AdvancedDynamicTexture;
@@ -18,8 +25,8 @@ export interface HudElements {
   restartText: TextBlock;
   scoreText: TextBlock;
   liveScore: TextBlock;
-  p1Label: TextBlock;
-  p2Label: TextBlock;
+  p1Label: StackPanel;
+  p2Label: StackPanel;
   controlsText: TextBlock;
   p1Cooldown: TextBlock;
   p2Cooldown: TextBlock;
@@ -79,24 +86,46 @@ export function createHud(scene: Scene): HudElements {
   liveScore.top = HUD_LIVE_SCORE_TOP;
   ui.addControl(liveScore);
 
-  const p1Label = new TextBlock('p1Label', 'P1: WASD + C/V + E');
-  p1Label.fontSize = HUD_LABEL_FONT_SIZE;
-  p1Label.fontWeight = 'bold';
-  p1Label.color = P1_HUD_COLOR;
-  p1Label.fontFamily = 'monospace';
-  p1Label.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-  p1Label.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+  // P1 control label with icons
+  const p1Items: IconRowItem[] = [
+    { text: 'P1:' },
+    ...iconsFromKeys(P1_KB_MOVE, KB_ICONS),
+    { text: '+' },
+    ...iconsFromKeys(P1_KB_SLAP, KB_ICONS),
+    { text: '+' },
+    ...iconsFromKeys(P1_KB_ABILITY, KB_ICONS),
+  ];
+  const p1Label = createIconRow(p1Items, {
+    iconSize: ICON_SIZE.sm,
+    fontSize: 14,
+    color: P1_HUD_COLOR,
+    gap: 1,
+    name: 'p1Label',
+  });
+  p1Label.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+  p1Label.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
   p1Label.left = HUD_SIDE_MARGIN;
   p1Label.top = `-${HUD_LABEL_BOTTOM}`;
   ui.addControl(p1Label);
 
-  const p2Label = new TextBlock('p2Label', 'P2: OKL; + \u2190/\u2192 + P');
-  p2Label.fontSize = HUD_LABEL_FONT_SIZE;
-  p2Label.fontWeight = 'bold';
-  p2Label.color = P2_HUD_COLOR;
-  p2Label.fontFamily = 'monospace';
-  p2Label.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-  p2Label.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+  // P2 control label with icons
+  const p2Items: IconRowItem[] = [
+    { text: 'P2:' },
+    ...iconsFromKeys(P2_KB_MOVE, KB_ICONS),
+    { text: '+' },
+    ...iconsFromKeys(P2_KB_SLAP, KB_ICONS),
+    { text: '+' },
+    ...iconsFromKeys(P2_KB_ABILITY, KB_ICONS),
+  ];
+  const p2Label = createIconRow(p2Items, {
+    iconSize: ICON_SIZE.sm,
+    fontSize: 14,
+    color: P2_HUD_COLOR,
+    gap: 1,
+    name: 'p2Label',
+  });
+  p2Label.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+  p2Label.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
   p2Label.left = `-${HUD_SIDE_MARGIN}`;
   p2Label.top = `-${HUD_LABEL_BOTTOM}`;
   ui.addControl(p2Label);

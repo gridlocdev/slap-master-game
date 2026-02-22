@@ -2,7 +2,7 @@ import {
   Scene,
 } from '@babylonjs/core';
 import {
-  AdvancedDynamicTexture, TextBlock, Control, Rectangle, StackPanel,
+  AdvancedDynamicTexture, TextBlock, Control, Rectangle, StackPanel, Image,
 } from '@babylonjs/gui';
 import type { InputDevice } from '../types.ts';
 import { isKeyJustPressed, isGamepadSelectJustPressed } from '../input.ts';
@@ -12,6 +12,7 @@ import {
   INPUT_ASSIGN_ICON_SIZE, INPUT_ASSIGN_LABEL_SIZE,
   INPUT_ASSIGN_READY_COLOR, INPUT_ASSIGN_GAP, INPUT_ASSIGN_STICK_THRESHOLD,
 } from '../constants.ts';
+import { KB_ICONS, GP_ICONS } from './inputIcons.ts';
 
 // --- Module-level assignment state (persists across rounds) ---
 
@@ -73,8 +74,8 @@ export interface InputAssignUI {
   p2Box: Rectangle;
   p1DeviceLabel: TextBlock;
   p2DeviceLabel: TextBlock;
-  p1Icon: TextBlock;
-  p2Icon: TextBlock;
+  p1Icon: Image;
+  p2Icon: Image;
   p1ReadyText: TextBlock;
   p2ReadyText: TextBlock;
   instructionText: TextBlock;
@@ -225,11 +226,13 @@ function createPlayerColumn(parent: StackPanel, idx: number) {
   deviceLabel.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
   boxStack.addControl(deviceLabel);
 
-  // Large icon
-  const icon = new TextBlock(`iaIcon_${idx}`, '---');
-  icon.fontSize = INPUT_ASSIGN_ICON_SIZE;
-  icon.height = '80px';
-  icon.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+  // Large device icon image
+  const icon = new Image(`iaIcon_${idx}`, KB_ICONS.device);
+  icon.width = `${INPUT_ASSIGN_ICON_SIZE}px`;
+  icon.height = `${INPUT_ASSIGN_ICON_SIZE}px`;
+  icon.stretch = Image.STRETCH_UNIFORM;
+  icon.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+  icon.paddingTop = '8px';
   boxStack.addControl(icon);
 
   // Ready text below the box
@@ -252,17 +255,17 @@ function formatDeviceLabel(device: InputDevice | null): string {
   return 'Gamepad';
 }
 
-function formatDeviceIcon(device: InputDevice | null): string {
-  if (!device) return '---';
-  if (device.type === 'keyboard') return '\u2328\uFE0F';
-  return '\uD83C\uDFAE';
+function formatDeviceIconUrl(device: InputDevice | null): string {
+  if (!device) return KB_ICONS.device; // fallback
+  if (device.type === 'keyboard') return KB_ICONS.device;
+  return GP_ICONS.device;
 }
 
 function syncPanelVisuals(ui: InputAssignUI): void {
   ui.p1DeviceLabel.text = formatDeviceLabel(assignment.p1);
   ui.p2DeviceLabel.text = formatDeviceLabel(assignment.p2);
-  ui.p1Icon.text = formatDeviceIcon(assignment.p1);
-  ui.p2Icon.text = formatDeviceIcon(assignment.p2);
+  ui.p1Icon.source = formatDeviceIconUrl(assignment.p1);
+  ui.p2Icon.source = formatDeviceIconUrl(assignment.p2);
 
   // Dim color for unassigned
   ui.p1DeviceLabel.color = assignment.p1 ? '#ffffff' : '#888899';
