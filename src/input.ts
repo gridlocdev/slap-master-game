@@ -67,6 +67,9 @@ const prevButtonA = new Map<number, boolean>();
 // Select button (index 8) for input assignment overlay
 const buttonJustSelect = new Set<number>();
 const prevButtonSelect = new Map<number, boolean>();
+// Start button (index 9) for pause
+const buttonJustStart = new Set<number>();
+const prevButtonStart = new Map<number, boolean>();
 
 export function pollGamepads(): void {
   triggerJustLeft.clear();
@@ -75,6 +78,7 @@ export function pollGamepads(): void {
   buttonJustX.clear();
   buttonJustA.clear();
   buttonJustSelect.clear();
+  buttonJustStart.clear();
 
   const gamepads = navigator.getGamepads();
   for (let i = 0; i < gamepads.length; i++) {
@@ -111,6 +115,11 @@ export function pollGamepads(): void {
     const selDown = gp.buttons[GAMEPAD_SELECT_BUTTON]?.pressed ?? false;
     if (selDown && !prevButtonSelect.get(i)) buttonJustSelect.add(i);
     prevButtonSelect.set(i, selDown);
+
+    // Start button (index 9) for pause
+    const startDown = gp.buttons[9]?.pressed ?? false;
+    if (startDown && !prevButtonStart.get(i)) buttonJustStart.add(i);
+    prevButtonStart.set(i, startDown);
   }
 }
 
@@ -167,6 +176,14 @@ export function isGamepadXJustPressed(padIndex: number): boolean {
 
 export function isAnyGamepadSelectJustPressed(): boolean {
   return buttonJustSelect.size > 0;
+}
+
+export function isGamepadStartJustPressed(padIndex: number): boolean {
+  return buttonJustStart.has(padIndex);
+}
+
+export function isAnyGamepadStartJustPressed(): boolean {
+  return buttonJustStart.size > 0;
 }
 
 export function mergeInput(a: PlayerInput, b: PlayerInput): PlayerInput {

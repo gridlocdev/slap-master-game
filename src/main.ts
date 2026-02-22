@@ -6,6 +6,7 @@ import { createEffectsPool, updateEffects } from './objects/effects.ts';
 import {
   readInput, clearJustPressed, isKeyJustPressed,
   pollGamepads, readGamepadInput, isGamepadRestart, mergeInput,
+  isGamepadStartJustPressed,
 } from './input.ts';
 import { createInitialState, createSelectionState } from './state/gameState.ts';
 import { updateGame } from './game.ts';
@@ -19,6 +20,8 @@ import { createCountdownUI, updateCountdown, destroyCountdown } from './ui/count
 import type { CountdownUI } from './ui/countdown.ts';
 import { createMainMenuUI, updateMainMenu, destroyMainMenu } from './ui/mainMenu.ts';
 import type { MainMenuUI } from './ui/mainMenu.ts';
+import { createPauseMenuUI, updatePauseMenu, destroyPauseMenu } from './ui/pauseMenu.ts';
+import type { PauseMenuUI } from './ui/pauseMenu.ts';
 import { P1_KEYS, P2_KEYS, RESTART_DELAY } from './constants.ts';
 import { initDefaultAssignment, getP1GamepadIndex, getP2GamepadIndex } from './ui/inputAssign.ts';
 import type { AbilityType } from './types.ts';
@@ -45,6 +48,8 @@ let gamePhase: 'menu' | 'selecting' | 'countdown' | 'playing' = 'menu';
 let savedCamera: { pos: Vector3; target: Vector3 } | null = null;
 let scoreApplied = false; // track whether we've already credited the round win
 let countdownUI: CountdownUI | null = null;
+let isPaused = false;
+let pauseMenuUI: PauseMenuUI | null = null;
 
 // Enter menu mode
 setHudVisible(hud, false);
@@ -81,13 +86,65 @@ function startNextRound(): void {
   setHudVisible(hud, false);
 }
 
+function checkPauseToggle(): boolean {
+  const p1Pad = getP1GamepadIndex();
+  const p2Pad = getP2GamepadIndex();
+  return isKeyJustPressed('Escape')
+    || (p1Pad !== null && isGamepadStartJustPressed(p1Pad))
+    || (p2Pad !== null && isGamepadStartJustPressed(p2Pad));
+}
+
+function resumeGame(): void {
+  if (pauseMenuUI) {
+    destroyPauseMenu(pauseMenuUI);
+    pauseMenuUI = null;
+  }
+  isPaused = false;
+}
+
+function handlePauseAction(action: string | null): void {
+  if (action === 'resume') {
+    resumeGame();
+  } else if (action === 'select') {
+    resumeGame();
+    goToSelection();
+  } else if (action === 'menu') {
+    resumeGame();
+    goToMenu();
+  }
+  // 'controls' is a no-op placeholder
+}
+
+function goToSelection(): void {
+  state = createSelectionState();
+  gamePhase = 'selecting';
+  selectionUI = createSelectionUI(scene);
+  if (countdownUI) {
+    destroyCountdown(countdownUI);
+    countdownUI = null;
+  }
+  setHudVisible(hud, false);
+  setArenaMeshesVisible(scene, false);
+  if (!savedCamera) {
+    savedCamera = enterSelectionCamera(camera);
+  }
+  setPlayerMeshesVisible(playerMeshes[0], true);
+  setPlayerMeshesVisible(playerMeshes[1], true);
+}
+
 function goToMenu(): void {
   state = createSelectionState();
   gamePhase = 'menu';
   mainMenuUI = createMainMenuUI(scene);
+  if (countdownUI) {
+    destroyCountdown(countdownUI);
+    countdownUI = null;
+  }
   setHudVisible(hud, false);
   setArenaMeshesVisible(scene, false);
-  savedCamera = enterSelectionCamera(camera);
+  if (!savedCamera) {
+    savedCamera = enterSelectionCamera(camera);
+  }
   setPlayerMeshesVisible(playerMeshes[0], false);
   setPlayerMeshesVisible(playerMeshes[1], false);
 }
@@ -123,76 +180,104 @@ engine.runRenderLoop(() => {
     }
 
   } else if (gamePhase === 'countdown') {
-    if (countdownUI && updateCountdown(countdownUI, dt)) {
-      destroyCountdown(countdownUI);
-      countdownUI = null;
-      gamePhase = 'playing';
-      setHudVisible(hud, true);
+    // Pause toggle
+    if (checkPauseToggle()) {
+      if (isPaused) {
+        resumeGame();
+      } else {
+        isPaused = true;
+        pauseMenuUI = createPauseMenuUI(scene);
+      }
     }
 
-    // Read input (same as playing phase)
-    let p1Input = readInput(P1_KEYS);
-    let p2Input = readInput(P2_KEYS);
-    const p1Pad = getP1GamepadIndex();
-    const p2Pad = getP2GamepadIndex();
-    const gp1 = p1Pad !== null ? readGamepadInput(p1Pad) : null;
-    const gp2 = p2Pad !== null ? readGamepadInput(p2Pad) : null;
-    if (gp1) p1Input = mergeInput(p1Input, gp1);
-    if (gp2) p2Input = mergeInput(p2Input, gp2);
+    if (isPaused) {
+      if (pauseMenuUI) handlePauseAction(updatePauseMenu(pauseMenuUI));
+    } else {
+      if (countdownUI && updateCountdown(countdownUI, dt)) {
+        destroyCountdown(countdownUI);
+        countdownUI = null;
+        gamePhase = 'playing';
+        setHudVisible(hud, true);
+      }
 
-    // During countdown: only slapping allowed (no movement, no abilities)
-    p1Input.forward = p1Input.back = p1Input.left = p1Input.right = p1Input.ability = false;
-    p2Input.forward = p2Input.back = p2Input.left = p2Input.right = p2Input.ability = false;
+      // Read input (same as playing phase)
+      let p1Input = readInput(P1_KEYS);
+      let p2Input = readInput(P2_KEYS);
+      const p1Pad = getP1GamepadIndex();
+      const p2Pad = getP2GamepadIndex();
+      const gp1 = p1Pad !== null ? readGamepadInput(p1Pad) : null;
+      const gp2 = p2Pad !== null ? readGamepadInput(p2Pad) : null;
+      if (gp1) p1Input = mergeInput(p1Input, gp1);
+      if (gp2) p2Input = mergeInput(p2Input, gp2);
 
-    // Run game logic (movement, slapping, knockback — everything except abilities)
-    updateGame(state, p1Input, p2Input, dt);
+      // During countdown: only slapping allowed (no movement, no abilities)
+      p1Input.forward = p1Input.back = p1Input.left = p1Input.right = p1Input.ability = false;
+      p2Input.forward = p2Input.back = p2Input.left = p2Input.right = p2Input.ability = false;
 
-    updatePlayerMeshes(playerMeshes[0], state.players[0], 0, dt);
-    updatePlayerMeshes(playerMeshes[1], state.players[1], 1, dt);
-    updateEffects(effectsPool, state);
+      // Run game logic (movement, slapping, knockback — everything except abilities)
+      updateGame(state, p1Input, p2Input, dt);
+
+      updatePlayerMeshes(playerMeshes[0], state.players[0], 0, dt);
+      updatePlayerMeshes(playerMeshes[1], state.players[1], 1, dt);
+      updateEffects(effectsPool, state);
+    }
 
   } else {
-    // Keyboard input
-    let p1Input = readInput(P1_KEYS);
-    let p2Input = readInput(P2_KEYS);
-
-    // Merge gamepad input (use assigned pad indices)
-    const p1Pad = getP1GamepadIndex();
-    const p2Pad = getP2GamepadIndex();
-    const gp1 = p1Pad !== null ? readGamepadInput(p1Pad) : null;
-    const gp2 = p2Pad !== null ? readGamepadInput(p2Pad) : null;
-    if (gp1) p1Input = mergeInput(p1Input, gp1);
-    if (gp2) p2Input = mergeInput(p2Input, gp2);
-
-    if (state.winner !== null) {
-      // Credit round win once
-      if (!scoreApplied) {
-        state.scores[state.winner]++;
-        scoreApplied = true;
+    // Pause toggle (only when no winner)
+    if (state.winner === null && checkPauseToggle()) {
+      if (isPaused) {
+        resumeGame();
+      } else {
+        isPaused = true;
+        pauseMenuUI = createPauseMenuUI(scene);
       }
-
-      state.restartTimer += dt;
-      const canRestart = state.restartTimer > RESTART_DELAY;
-      const restartPressed = isKeyJustPressed('Space')
-        || (p1Pad !== null && isGamepadRestart(p1Pad))
-        || (p2Pad !== null && isGamepadRestart(p2Pad));
-
-      if (canRestart && restartPressed) {
-        const setWon = state.scores[state.winner] >= state.roundsToWin;
-        if (setWon) {
-          goToMenu();
-        } else {
-          startNextRound();
-        }
-      }
-    } else {
-      updateGame(state, p1Input, p2Input, dt);
     }
 
-    updatePlayerMeshes(playerMeshes[0], state.players[0], 0, dt);
-    updatePlayerMeshes(playerMeshes[1], state.players[1], 1, dt);
-    updateHud(hud, state, dt);
-    updateEffects(effectsPool, state);
+    if (isPaused) {
+      if (pauseMenuUI) handlePauseAction(updatePauseMenu(pauseMenuUI));
+    } else {
+      // Keyboard input
+      let p1Input = readInput(P1_KEYS);
+      let p2Input = readInput(P2_KEYS);
+
+      // Merge gamepad input (use assigned pad indices)
+      const p1Pad = getP1GamepadIndex();
+      const p2Pad = getP2GamepadIndex();
+      const gp1 = p1Pad !== null ? readGamepadInput(p1Pad) : null;
+      const gp2 = p2Pad !== null ? readGamepadInput(p2Pad) : null;
+      if (gp1) p1Input = mergeInput(p1Input, gp1);
+      if (gp2) p2Input = mergeInput(p2Input, gp2);
+
+      if (state.winner !== null) {
+        // Credit round win once
+        if (!scoreApplied) {
+          state.scores[state.winner]++;
+          scoreApplied = true;
+        }
+
+        state.restartTimer += dt;
+        const canRestart = state.restartTimer > RESTART_DELAY;
+        const restartPressed = isKeyJustPressed('Space')
+          || (p1Pad !== null && isGamepadRestart(p1Pad))
+          || (p2Pad !== null && isGamepadRestart(p2Pad));
+
+        if (canRestart && restartPressed) {
+          const setWon = state.scores[state.winner] >= state.roundsToWin;
+          if (setWon) {
+            goToMenu();
+          } else {
+            startNextRound();
+          }
+        }
+      } else {
+        updateGame(state, p1Input, p2Input, dt);
+      }
+
+      updatePlayerMeshes(playerMeshes[0], state.players[0], 0, dt);
+      updatePlayerMeshes(playerMeshes[1], state.players[1], 1, dt);
+      updateHud(hud, state, dt);
+      updateEffects(effectsPool, state);
+    }
   }
 
   clearJustPressed();
