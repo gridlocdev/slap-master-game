@@ -22,6 +22,8 @@ import { createMainMenuUI, updateMainMenu, destroyMainMenu } from './ui/mainMenu
 import type { MainMenuUI } from './ui/mainMenu.ts';
 import { createPauseMenuUI, updatePauseMenu, destroyPauseMenu } from './ui/pauseMenu.ts';
 import type { PauseMenuUI } from './ui/pauseMenu.ts';
+import { createControlsMenu, updateControlsMenu, destroyControlsMenu } from './ui/controlsMenu.ts';
+import type { ControlsMenuUI } from './ui/controlsMenu.ts';
 import { P1_KEYS, P2_KEYS, RESTART_DELAY } from './constants.ts';
 import { initDefaultAssignment, getP1GamepadIndex, getP2GamepadIndex } from './ui/inputAssign.ts';
 import type { AbilityType } from './types.ts';
@@ -50,6 +52,7 @@ let scoreApplied = false; // track whether we've already credited the round win
 let countdownUI: CountdownUI | null = null;
 let isPaused = false;
 let pauseMenuUI: PauseMenuUI | null = null;
+let controlsUI: ControlsMenuUI | null = null;
 
 // Enter menu mode
 setHudVisible(hud, false);
@@ -95,6 +98,10 @@ function checkPauseToggle(): boolean {
 }
 
 function resumeGame(): void {
+  if (controlsUI) {
+    destroyControlsMenu(controlsUI);
+    controlsUI = null;
+  }
   if (pauseMenuUI) {
     destroyPauseMenu(pauseMenuUI);
     pauseMenuUI = null;
@@ -111,8 +118,9 @@ function handlePauseAction(action: string | null): void {
   } else if (action === 'menu') {
     resumeGame();
     goToMenu();
+  } else if (action === 'controls') {
+    controlsUI = createControlsMenu(scene);
   }
-  // 'controls' is a no-op placeholder
 }
 
 function goToSelection(): void {
@@ -154,7 +162,12 @@ engine.runRenderLoop(() => {
   pollGamepads();
 
   if (gamePhase === 'menu') {
-    if (mainMenuUI) {
+    if (controlsUI) {
+      if (updateControlsMenu(controlsUI)) {
+        destroyControlsMenu(controlsUI);
+        controlsUI = null;
+      }
+    } else if (mainMenuUI) {
       const action = updateMainMenu(mainMenuUI);
       if (action === 'local') {
         destroyMainMenu(mainMenuUI);
@@ -163,6 +176,8 @@ engine.runRenderLoop(() => {
         selectionUI = createSelectionUI(scene);
         setPlayerMeshesVisible(playerMeshes[0], true);
         setPlayerMeshesVisible(playerMeshes[1], true);
+      } else if (action === 'controls') {
+        controlsUI = createControlsMenu(scene);
       }
     }
 
@@ -180,8 +195,8 @@ engine.runRenderLoop(() => {
     }
 
   } else if (gamePhase === 'countdown') {
-    // Pause toggle
-    if (checkPauseToggle()) {
+    // Pause toggle (skip if controls overlay is active)
+    if (!controlsUI && checkPauseToggle()) {
       if (isPaused) {
         resumeGame();
       } else {
@@ -191,7 +206,14 @@ engine.runRenderLoop(() => {
     }
 
     if (isPaused) {
-      if (pauseMenuUI) handlePauseAction(updatePauseMenu(pauseMenuUI));
+      if (controlsUI) {
+        if (updateControlsMenu(controlsUI)) {
+          destroyControlsMenu(controlsUI);
+          controlsUI = null;
+        }
+      } else if (pauseMenuUI) {
+        handlePauseAction(updatePauseMenu(pauseMenuUI));
+      }
     } else {
       if (countdownUI && updateCountdown(countdownUI, dt)) {
         destroyCountdown(countdownUI);
@@ -223,8 +245,8 @@ engine.runRenderLoop(() => {
     }
 
   } else {
-    // Pause toggle (only when no winner)
-    if (state.winner === null && checkPauseToggle()) {
+    // Pause toggle (only when no winner, skip if controls overlay is active)
+    if (!controlsUI && state.winner === null && checkPauseToggle()) {
       if (isPaused) {
         resumeGame();
       } else {
@@ -234,7 +256,14 @@ engine.runRenderLoop(() => {
     }
 
     if (isPaused) {
-      if (pauseMenuUI) handlePauseAction(updatePauseMenu(pauseMenuUI));
+      if (controlsUI) {
+        if (updateControlsMenu(controlsUI)) {
+          destroyControlsMenu(controlsUI);
+          controlsUI = null;
+        }
+      } else if (pauseMenuUI) {
+        handlePauseAction(updatePauseMenu(pauseMenuUI));
+      }
     } else {
       // Keyboard input
       let p1Input = readInput(P1_KEYS);
