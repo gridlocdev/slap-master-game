@@ -118,8 +118,8 @@ engine.runRenderLoop(() => {
     // Merge gamepad input (use assigned pad indices)
     const p1Pad = getP1GamepadIndex();
     const p2Pad = getP2GamepadIndex();
-    const gp1 = p1Pad !== null ? readGamepadInput(p1Pad, state.players[0].facingAngle) : null;
-    const gp2 = p2Pad !== null ? readGamepadInput(p2Pad, state.players[1].facingAngle) : null;
+    const gp1 = p1Pad !== null ? readGamepadInput(p1Pad) : null;
+    const gp2 = p2Pad !== null ? readGamepadInput(p2Pad) : null;
     if (gp1) p1Input = mergeInput(p1Input, gp1);
     if (gp2) p2Input = mergeInput(p2Input, gp2);
 

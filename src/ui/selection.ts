@@ -674,6 +674,8 @@ function unconfirmPanel(panel: PlayerSelectionPanel): void {
 }
 
 const prevStickX = [0, 0];
+const prevDpadLeft = [false, false];
+const prevDpadRight = [false, false];
 
 export function updateSelection(selUI: SelectionUI, state: GameState): boolean {
   // Input assignment overlay
@@ -805,23 +807,35 @@ function handleGamepadSelection(panel: PlayerSelectionPanel, padIdx: number): vo
   const gp = gamepads[padIdx];
   if (!gp) return;
 
+  const dpadL = gp.buttons[14]?.pressed ?? false;
+  const dpadR = gp.buttons[15]?.pressed ?? false;
+
   if (panel.confirmed) {
     if (gp.buttons[1]?.pressed) {
       unconfirmPanel(panel);
     }
     prevStickX[padIdx] = gp.axes[0] ?? 0;
+    prevDpadLeft[padIdx] = dpadL;
+    prevDpadRight[padIdx] = dpadR;
     return;
   }
 
   const sx = gp.axes[0] ?? 0;
 
-  if (sx < -SELECTION_STICK_THRESHOLD && prevStickX[padIdx] >= -SELECTION_STICK_THRESHOLD) {
+  const goLeft = (sx < -SELECTION_STICK_THRESHOLD && prevStickX[padIdx] >= -SELECTION_STICK_THRESHOLD)
+    || (dpadL && !prevDpadLeft[padIdx]);
+  const goRight = (sx > SELECTION_STICK_THRESHOLD && prevStickX[padIdx] <= SELECTION_STICK_THRESHOLD)
+    || (dpadR && !prevDpadRight[padIdx]);
+
+  if (goLeft) {
     panel.selectedIndex = (panel.selectedIndex - 1 + CARD_COUNT) % CARD_COUNT;
   }
-  if (sx > SELECTION_STICK_THRESHOLD && prevStickX[padIdx] <= SELECTION_STICK_THRESHOLD) {
+  if (goRight) {
     panel.selectedIndex = (panel.selectedIndex + 1) % CARD_COUNT;
   }
   prevStickX[padIdx] = sx;
+  prevDpadLeft[padIdx] = dpadL;
+  prevDpadRight[padIdx] = dpadR;
 
   if (gp.buttons[2]?.pressed) {
     confirmPanel(panel);

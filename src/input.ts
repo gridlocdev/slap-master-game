@@ -114,7 +114,7 @@ export function pollGamepads(): void {
   }
 }
 
-export function readGamepadInput(padIndex: number, facingAngle: number): PlayerInput | null {
+export function readGamepadInput(padIndex: number): PlayerInput | null {
   const gamepads = navigator.getGamepads();
   const gp = gamepads[padIndex];
   if (!gp) return null;
@@ -130,18 +130,19 @@ export function readGamepadInput(padIndex: number, facingAngle: number): PlayerI
     sy = 0;
   }
 
-  // Project stick onto facing-relative axes
-  // Stick X → world X, stick Y → world Y (game's 2D plane)
-  const cosA = Math.cos(facingAngle);
-  const sinA = Math.sin(facingAngle);
-  const forwardComponent = sx * cosA + sy * sinA;
-  const rightComponent = sx * (-sinA) + sy * cosA;
+  // D-pad: buttons 12=up, 13=down, 14=left, 15=right
+  const dpadUp = gp.buttons[12]?.pressed ?? false;
+  const dpadDown = gp.buttons[13]?.pressed ?? false;
+  const dpadLeft = gp.buttons[14]?.pressed ?? false;
+  const dpadRight = gp.buttons[15]?.pressed ?? false;
 
+  // Stick axes map directly to facing-relative directions
+  // (movement.ts converts forward/back/left/right using facingAngle)
   return {
-    forward: forwardComponent > STICK_DEADZONE,
-    back: forwardComponent < -STICK_DEADZONE,
-    right: rightComponent > STICK_DEADZONE,
-    left: rightComponent < -STICK_DEADZONE,
+    forward: -sy > STICK_DEADZONE || dpadUp,
+    back: sy > STICK_DEADZONE || dpadDown,
+    right: -sx > STICK_DEADZONE || dpadRight,
+    left: sx > STICK_DEADZONE || dpadLeft,
     slapLeft: triggerJustLeft.has(padIndex),
     slapRight: triggerJustRight.has(padIndex),
     ability: buttonJustX.has(padIndex),
