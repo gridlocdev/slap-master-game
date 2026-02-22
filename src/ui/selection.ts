@@ -11,7 +11,7 @@ import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, StackPanel } fro
 import type { AbilityType, GameState } from '../types.ts';
 import type { PlayerMeshes } from '../objects/player.ts';
 import { applyAbilityVisual } from '../objects/player.ts';
-import { isKeyJustPressed, isAnyGamepadSelectJustPressed, isGamepadBJustPressed, isGamepadXJustPressed } from '../input.ts';
+import { isKeyJustPressed, isShiftJustPressed, isAnyGamepadSelectJustPressed, isGamepadBJustPressed, isGamepadXJustPressed } from '../input.ts';
 import {
   createInputAssignUI, updateInputAssignUI, destroyInputAssignUI,
   getP1GamepadIndex, getP2GamepadIndex, isP2Unassigned,
@@ -768,8 +768,8 @@ export function updateSelection(selUI: SelectionUI, state: GameState): 'ready' |
   selUI.p2KbRow.isVisible = !p2Gp;
   selUI.p2GpRow.isVisible = p2Gp;
 
-  // Open overlay on Backquote or any gamepad Select
-  if (isKeyJustPressed('Backquote') || isAnyGamepadSelectJustPressed()) {
+  // Open overlay on Shift or any gamepad Select
+  if (isShiftJustPressed() || isAnyGamepadSelectJustPressed()) {
     const scene = selUI.ui.getScene()!;
     selUI.inputAssignUI = createInputAssignUI(scene);
     return null;

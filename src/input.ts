@@ -43,6 +43,10 @@ export function isKeyJustPressed(code: string): boolean {
   return keysJustPressed.has(code);
 }
 
+export function isShiftJustPressed(): boolean {
+  return keysJustPressed.has('ShiftLeft') || keysJustPressed.has('ShiftRight');
+}
+
 export function clearJustPressed(): void {
   keysJustPressed.clear();
 }

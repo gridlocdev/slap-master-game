@@ -38,7 +38,7 @@ import gp_rt from '../assets/ui/kenney-input-prompts/xbox/xbox_rt.png';
 import gp_x from '../assets/ui/kenney-input-prompts/xbox/xbox_button_color_x.png';
 import gp_b from '../assets/ui/kenney-input-prompts/xbox/xbox_button_color_b.png';
 import gp_a from '../assets/ui/kenney-input-prompts/xbox/xbox_button_color_a.png';
-import gp_back from '../assets/ui/kenney-input-prompts/xbox/xbox_button_back.png';
+import gp_back from '../assets/ui/kenney-input-prompts/xbox/xbox_button_back_icon.png';
 import gp_view from '../assets/ui/kenney-input-prompts/xbox/xbox_button_view.png';
 import gp_device from '../assets/ui/kenney-input-prompts/xbox/controller_xboxseries.png';
 

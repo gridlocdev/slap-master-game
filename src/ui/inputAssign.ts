@@ -5,7 +5,7 @@ import {
   AdvancedDynamicTexture, TextBlock, Control, Rectangle, StackPanel, Image,
 } from '@babylonjs/gui';
 import type { InputDevice } from '../types.ts';
-import { isKeyJustPressed, isGamepadSelectJustPressed } from '../input.ts';
+import { isKeyJustPressed, isShiftJustPressed, isGamepadSelectJustPressed } from '../input.ts';
 import {
   P1_HUD_COLOR, P2_HUD_COLOR,
   INPUT_ASSIGN_BG, INPUT_ASSIGN_PANEL_W,
@@ -355,9 +355,9 @@ export function updateInputAssignUI(ui: InputAssignUI): boolean {
   const soloP1 = assignment.p1?.type === 'gamepad' && assignment.p2 === null;
   const canReady = bothAssigned || soloP1;
   if (canReady) {
-    // P1 ready: keyboard → Backquote, gamepad → Select
+    // P1 ready: keyboard → Shift, gamepad → Select
     if (!p1Ready) {
-      if (assignment.p1!.type === 'keyboard' && isKeyJustPressed('Backquote')) {
+      if (assignment.p1!.type === 'keyboard' && isShiftJustPressed()) {
         p1Ready = true;
       } else if (assignment.p1!.type === 'gamepad' && isGamepadSelectJustPressed(assignment.p1!.index)) {
         p1Ready = true;
@@ -369,17 +369,17 @@ export function updateInputAssignUI(ui: InputAssignUI): boolean {
       p2Ready = true;
     }
 
-    // P2 ready: keyboard → Backquote, gamepad → Select
+    // P2 ready: keyboard → Shift, gamepad → Select
     if (!p2Ready && bothAssigned) {
-      if (assignment.p2!.type === 'keyboard' && isKeyJustPressed('Backquote')) {
+      if (assignment.p2!.type === 'keyboard' && isShiftJustPressed()) {
         p2Ready = true;
       } else if (assignment.p2!.type === 'gamepad' && isGamepadSelectJustPressed(assignment.p2!.index)) {
         p2Ready = true;
       }
     }
 
-    // If both keyboard, single Backquote readies both
-    if (bothAssigned && assignment.p1!.type === 'keyboard' && assignment.p2!.type === 'keyboard' && isKeyJustPressed('Backquote')) {
+    // If both keyboard, single Shift readies both
+    if (bothAssigned && assignment.p1!.type === 'keyboard' && assignment.p2!.type === 'keyboard' && isShiftJustPressed()) {
       p1Ready = true;
       p2Ready = true;
     }
