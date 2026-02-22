@@ -110,12 +110,16 @@ engine.runRenderLoop(() => {
     }
 
   } else if (gamePhase === 'selecting') {
-    const bothReady = updateSelection(selectionUI!, state);
+    const result = updateSelection(selectionUI!, state);
     updateSelectionMeshes(playerMeshes, dt, getHoveredAbilities(selectionUI!));
-    if (bothReady) {
+    if (result === 'ready') {
       const p1Ability = state.selections[0]!;
       const p2Ability = state.selections[1]!;
       startGame(p1Ability, p2Ability);
+    } else if (result === 'back') {
+      destroySelectionUI(selectionUI!);
+      selectionUI = null;
+      goToMenu();
     }
 
   } else if (gamePhase === 'countdown') {

@@ -478,8 +478,12 @@ export function createSelectionUI(scene: Scene): SelectionUI {
   p2Row.left = '-20px';
   controlsBar.addControl(p2Row);
 
-  // Center: gamepad hints + tilde/back icon row
+  // Center: menu/back hint + input setup + gamepad hints
   const centerItems: IconRowItem[] = [
+    { icon: KB_ICONS.escape },
+    { text: '/' },
+    ...iconsFromKeys(GP_SEL_BACK, GP_ICONS),
+    { text: '= menu  ' },
     { icon: KB_ICONS.tilde },
     { text: '/' },
     { icon: GP_ICONS.back },
@@ -726,21 +730,32 @@ const prevStickX = [0, 0];
 const prevDpadLeft = [false, false];
 const prevDpadRight = [false, false];
 
-export function updateSelection(selUI: SelectionUI, state: GameState): boolean {
+export function updateSelection(selUI: SelectionUI, state: GameState): 'ready' | 'back' | null {
   // Input assignment overlay
   if (selUI.inputAssignUI) {
     if (updateInputAssignUI(selUI.inputAssignUI)) {
       destroyInputAssignUI(selUI.inputAssignUI);
       selUI.inputAssignUI = null;
     }
-    return false;
+    return null;
   }
 
   // Open overlay on Backquote or any gamepad Select
   if (isKeyJustPressed('Backquote') || isAnyGamepadSelectJustPressed()) {
     const scene = selUI.ui.getScene()!;
     selUI.inputAssignUI = createInputAssignUI(scene);
-    return false;
+    return null;
+  }
+
+  // Back to menu: Esc or gamepad B when neither player is confirmed
+  if (!selUI.panels[0].confirmed && !selUI.panels[1].confirmed) {
+    const p1Pad = getP1GamepadIndex();
+    const p2Pad = getP2GamepadIndex();
+    const gamepadBack = (p1Pad !== null && isGamepadBJustPressed(p1Pad))
+      || (p2Pad !== null && isGamepadBJustPressed(p2Pad));
+    if (isKeyJustPressed('Escape') || gamepadBack) {
+      return 'back';
+    }
   }
 
   // P1 controls: A/D cycle, C/V confirm, Escape unconfirm
@@ -822,7 +837,7 @@ export function updateSelection(selUI: SelectionUI, state: GameState): boolean {
     }
   }
 
-  return selUI.panels[0].confirmed && selUI.panels[1].confirmed;
+  return (selUI.panels[0].confirmed && selUI.panels[1].confirmed) ? 'ready' : null;
 }
 
 function handlePlayerSelection(
