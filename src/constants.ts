@@ -176,7 +176,7 @@ export const JUICE_MARK_DISC_RADIUS = 0.8;
 export const JUICE_MARK_ALPHA = 0.6;
 
 // HUD
-export const HUD_WIN_FONT_SIZE = 80;
+export const HUD_WIN_FONT_SIZE = 48;
 export const HUD_RESTART_FONT_SIZE = 24;
 export const HUD_SCORE_FONT_SIZE = 28;
 export const HUD_LABEL_FONT_SIZE = 22;
@@ -190,10 +190,12 @@ export const P2_HUD_COLOR = '#ff4444';
 export const HUD_WIN_TOP = '-60px';
 export const HUD_RESTART_TOP = '20px';
 export const HUD_SCORE_TOP = '70px';
-export const HUD_LABEL_TOP = '10px';
-export const HUD_COOLDOWN_TOP = '36px';
+export const HUD_LABEL_BOTTOM = '38px';
+export const HUD_COOLDOWN_BOTTOM = '15px';
 export const HUD_SIDE_MARGIN = '20px';
 export const HUD_CONTROLS_TOP = '-15px';
+export const HUD_LIVE_SCORE_TOP = '15px';
+export const HUD_LIVE_SCORE_FONT_SIZE = 36;
 export const HUD_OUTLINE_COLOR = '#000000';
 export const HUD_WIN_OUTLINE_WIDTH = 8;
 export const HUD_SCORE_OUTLINE_WIDTH = 3;

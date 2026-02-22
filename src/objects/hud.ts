@@ -7,8 +7,9 @@ import {
   HUD_TEXT_COLOR, HUD_RESTART_COLOR, HUD_CONTROLS_COLOR,
   P1_HUD_COLOR, P2_HUD_COLOR,
   HUD_WIN_TOP, HUD_RESTART_TOP, HUD_SCORE_TOP,
-  HUD_LABEL_TOP, HUD_COOLDOWN_TOP, HUD_SIDE_MARGIN, HUD_CONTROLS_TOP,
+  HUD_LABEL_BOTTOM, HUD_COOLDOWN_BOTTOM, HUD_SIDE_MARGIN, HUD_CONTROLS_TOP,
   HUD_OUTLINE_COLOR, HUD_WIN_OUTLINE_WIDTH, HUD_SCORE_OUTLINE_WIDTH,
+  HUD_LIVE_SCORE_TOP, HUD_LIVE_SCORE_FONT_SIZE,
 } from '../constants.ts';
 
 export interface HudElements {
@@ -16,11 +17,15 @@ export interface HudElements {
   winText: TextBlock;
   restartText: TextBlock;
   scoreText: TextBlock;
+  liveScore: TextBlock;
   p1Label: TextBlock;
   p2Label: TextBlock;
   controlsText: TextBlock;
   p1Cooldown: TextBlock;
   p2Cooldown: TextBlock;
+  fadeAlpha: number;
+  winFadeAlpha: number;
+  prevWinVisible: boolean;
 }
 
 const ABILITY_NAMES: Record<string, string> = {
@@ -63,15 +68,26 @@ export function createHud(scene: Scene): HudElements {
   scoreText.isVisible = false;
   ui.addControl(scoreText);
 
+  const liveScore = new TextBlock('liveScore', '0 - 0');
+  liveScore.fontSize = HUD_LIVE_SCORE_FONT_SIZE;
+  liveScore.fontWeight = 'bold';
+  liveScore.color = HUD_TEXT_COLOR;
+  liveScore.fontFamily = 'monospace';
+  liveScore.outlineColor = HUD_OUTLINE_COLOR;
+  liveScore.outlineWidth = HUD_SCORE_OUTLINE_WIDTH;
+  liveScore.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+  liveScore.top = HUD_LIVE_SCORE_TOP;
+  ui.addControl(liveScore);
+
   const p1Label = new TextBlock('p1Label', 'P1: WASD + C/V + E');
   p1Label.fontSize = HUD_LABEL_FONT_SIZE;
   p1Label.fontWeight = 'bold';
   p1Label.color = P1_HUD_COLOR;
   p1Label.fontFamily = 'monospace';
   p1Label.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-  p1Label.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+  p1Label.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
   p1Label.left = HUD_SIDE_MARGIN;
-  p1Label.top = HUD_LABEL_TOP;
+  p1Label.top = `-${HUD_LABEL_BOTTOM}`;
   ui.addControl(p1Label);
 
   const p2Label = new TextBlock('p2Label', 'P2: OKL; + \u2190/\u2192 + P');
@@ -80,9 +96,9 @@ export function createHud(scene: Scene): HudElements {
   p2Label.color = P2_HUD_COLOR;
   p2Label.fontFamily = 'monospace';
   p2Label.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-  p2Label.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+  p2Label.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
   p2Label.left = `-${HUD_SIDE_MARGIN}`;
-  p2Label.top = HUD_LABEL_TOP;
+  p2Label.top = `-${HUD_LABEL_BOTTOM}`;
   ui.addControl(p2Label);
 
   const p1Cooldown = new TextBlock('p1Cooldown', '');
@@ -91,9 +107,9 @@ export function createHud(scene: Scene): HudElements {
   p1Cooldown.color = P1_HUD_COLOR;
   p1Cooldown.fontFamily = 'monospace';
   p1Cooldown.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-  p1Cooldown.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+  p1Cooldown.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
   p1Cooldown.left = HUD_SIDE_MARGIN;
-  p1Cooldown.top = HUD_COOLDOWN_TOP;
+  p1Cooldown.top = `-${HUD_COOLDOWN_BOTTOM}`;
   ui.addControl(p1Cooldown);
 
   const p2Cooldown = new TextBlock('p2Cooldown', '');
@@ -102,9 +118,9 @@ export function createHud(scene: Scene): HudElements {
   p2Cooldown.color = P2_HUD_COLOR;
   p2Cooldown.fontFamily = 'monospace';
   p2Cooldown.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-  p2Cooldown.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+  p2Cooldown.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
   p2Cooldown.left = `-${HUD_SIDE_MARGIN}`;
-  p2Cooldown.top = HUD_COOLDOWN_TOP;
+  p2Cooldown.top = `-${HUD_COOLDOWN_BOTTOM}`;
   ui.addControl(p2Cooldown);
 
   const controlsText = new TextBlock('controlsText', 'SLAP your opponent off the arena!');
@@ -115,10 +131,27 @@ export function createHud(scene: Scene): HudElements {
   controlsText.top = HUD_CONTROLS_TOP;
   ui.addControl(controlsText);
 
-  return { ui, winText, restartText, scoreText, p1Label, p2Label, controlsText, p1Cooldown, p2Cooldown };
+  return {
+    ui, winText, restartText, scoreText, liveScore, p1Label, p2Label, controlsText, p1Cooldown, p2Cooldown,
+    fadeAlpha: 0, winFadeAlpha: 0, prevWinVisible: false,
+  };
 }
 
-export function updateHud(hud: HudElements, state: GameState): void {
+const HUD_FADE_SPEED = 4; // full opacity in 0.25s
+
+export function updateHud(hud: HudElements, state: GameState, dt: number): void {
+  // Fade base HUD elements
+  if (hud.fadeAlpha < 1) {
+    hud.fadeAlpha = Math.min(1, hud.fadeAlpha + dt * HUD_FADE_SPEED);
+  }
+  hud.liveScore.alpha = hud.fadeAlpha;
+  hud.p1Label.alpha = hud.fadeAlpha;
+  hud.p2Label.alpha = hud.fadeAlpha;
+  hud.p1Cooldown.alpha = hud.fadeAlpha;
+  hud.p2Cooldown.alpha = hud.fadeAlpha;
+  hud.controlsText.alpha = hud.fadeAlpha;
+
+  const winVisible = state.winner !== null;
   if (state.winner !== null) {
     const setWon = state.scores[state.winner] >= state.roundsToWin;
     const pNum = state.winner + 1;
@@ -142,6 +175,24 @@ export function updateHud(hud: HudElements, state: GameState): void {
     hud.scoreText.isVisible = false;
   }
 
+  // Fade win elements
+  if (winVisible && !hud.prevWinVisible) {
+    hud.winFadeAlpha = 0;
+    hud.winText.alpha = 0;
+    hud.restartText.alpha = 0;
+    hud.scoreText.alpha = 0;
+  }
+  hud.prevWinVisible = winVisible;
+  if (winVisible && hud.winFadeAlpha < 1) {
+    hud.winFadeAlpha = Math.min(1, hud.winFadeAlpha + dt * HUD_FADE_SPEED);
+  }
+  hud.winText.alpha = hud.winFadeAlpha;
+  hud.restartText.alpha = hud.winFadeAlpha;
+  hud.scoreText.alpha = hud.winFadeAlpha;
+
+  // Live score (always updated)
+  hud.liveScore.text = `${state.scores[0]} - ${state.scores[1]}`;
+
   // Cooldown display
   for (let i = 0; i < 2; i++) {
     const player = state.players[i];
@@ -162,7 +213,19 @@ export function setHudVisible(hud: HudElements, visible: boolean): void {
   hud.p1Cooldown.isVisible = visible;
   hud.p2Cooldown.isVisible = visible;
   hud.controlsText.isVisible = visible;
+  hud.liveScore.isVisible = visible;
   hud.winText.isVisible = false;
   hud.restartText.isVisible = false;
   hud.scoreText.isVisible = false;
+  if (visible) {
+    hud.fadeAlpha = 0;
+    hud.winFadeAlpha = 0;
+    hud.prevWinVisible = false;
+    hud.liveScore.alpha = 0;
+    hud.p1Label.alpha = 0;
+    hud.p2Label.alpha = 0;
+    hud.p1Cooldown.alpha = 0;
+    hud.p2Cooldown.alpha = 0;
+    hud.controlsText.alpha = 0;
+  }
 }

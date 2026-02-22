@@ -150,7 +150,7 @@ engine.runRenderLoop(() => {
 
     updatePlayerMeshes(playerMeshes[0], state.players[0], 0, dt);
     updatePlayerMeshes(playerMeshes[1], state.players[1], 1, dt);
-    updateHud(hud, state);
+    updateHud(hud, state, dt);
     updateEffects(effectsPool, state);
   }
 
