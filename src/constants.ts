@@ -176,24 +176,27 @@ export const JUICE_MARK_DISC_RADIUS = 0.8;
 export const JUICE_MARK_ALPHA = 0.6;
 
 // HUD
-export const HUD_WIN_FONT_SIZE = 48;
-export const HUD_RESTART_FONT_SIZE = 20;
-export const HUD_SCORE_FONT_SIZE = 18;
-export const HUD_LABEL_FONT_SIZE = 14;
-export const HUD_COOLDOWN_FONT_SIZE = 13;
-export const HUD_CONTROLS_FONT_SIZE = 14;
+export const HUD_WIN_FONT_SIZE = 80;
+export const HUD_RESTART_FONT_SIZE = 24;
+export const HUD_SCORE_FONT_SIZE = 28;
+export const HUD_LABEL_FONT_SIZE = 22;
+export const HUD_COOLDOWN_FONT_SIZE = 18;
+export const HUD_CONTROLS_FONT_SIZE = 16;
 export const HUD_TEXT_COLOR = '#ffffff';
 export const HUD_RESTART_COLOR = '#aaaaaa';
-export const HUD_CONTROLS_COLOR = '#666688';
+export const HUD_CONTROLS_COLOR = '#8888aa';
 export const P1_HUD_COLOR = '#4488ff';
 export const P2_HUD_COLOR = '#ff4444';
-export const HUD_WIN_TOP = '-40px';
+export const HUD_WIN_TOP = '-60px';
 export const HUD_RESTART_TOP = '20px';
-export const HUD_SCORE_TOP = '55px';
+export const HUD_SCORE_TOP = '70px';
 export const HUD_LABEL_TOP = '10px';
-export const HUD_COOLDOWN_TOP = '28px';
+export const HUD_COOLDOWN_TOP = '36px';
 export const HUD_SIDE_MARGIN = '20px';
 export const HUD_CONTROLS_TOP = '-15px';
+export const HUD_OUTLINE_COLOR = '#000000';
+export const HUD_WIN_OUTLINE_WIDTH = 8;
+export const HUD_SCORE_OUTLINE_WIDTH = 3;
 
 // Selection screen
 export const STAGE_CAM_POS: [number, number, number] = [0, 1.2, -5.5];

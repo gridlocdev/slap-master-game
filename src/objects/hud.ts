@@ -8,6 +8,7 @@ import {
   P1_HUD_COLOR, P2_HUD_COLOR,
   HUD_WIN_TOP, HUD_RESTART_TOP, HUD_SCORE_TOP,
   HUD_LABEL_TOP, HUD_COOLDOWN_TOP, HUD_SIDE_MARGIN, HUD_CONTROLS_TOP,
+  HUD_OUTLINE_COLOR, HUD_WIN_OUTLINE_WIDTH, HUD_SCORE_OUTLINE_WIDTH,
 } from '../constants.ts';
 
 export interface HudElements {
@@ -33,14 +34,18 @@ export function createHud(scene: Scene): HudElements {
 
   const winText = new TextBlock('winText', '');
   winText.fontSize = HUD_WIN_FONT_SIZE;
+  winText.fontWeight = 'bold';
   winText.color = HUD_TEXT_COLOR;
   winText.fontFamily = 'monospace';
+  winText.outlineColor = HUD_OUTLINE_COLOR;
+  winText.outlineWidth = HUD_WIN_OUTLINE_WIDTH;
   winText.top = HUD_WIN_TOP;
   winText.isVisible = false;
   ui.addControl(winText);
 
   const restartText = new TextBlock('restartText', '');
   restartText.fontSize = HUD_RESTART_FONT_SIZE;
+  restartText.fontWeight = 'bold';
   restartText.color = HUD_RESTART_COLOR;
   restartText.fontFamily = 'monospace';
   restartText.top = HUD_RESTART_TOP;
@@ -49,14 +54,18 @@ export function createHud(scene: Scene): HudElements {
 
   const scoreText = new TextBlock('scoreText', '');
   scoreText.fontSize = HUD_SCORE_FONT_SIZE;
+  scoreText.fontWeight = 'bold';
   scoreText.color = HUD_TEXT_COLOR;
   scoreText.fontFamily = 'monospace';
+  scoreText.outlineColor = HUD_OUTLINE_COLOR;
+  scoreText.outlineWidth = HUD_SCORE_OUTLINE_WIDTH;
   scoreText.top = HUD_SCORE_TOP;
   scoreText.isVisible = false;
   ui.addControl(scoreText);
 
   const p1Label = new TextBlock('p1Label', 'P1: WASD + C/V + E');
   p1Label.fontSize = HUD_LABEL_FONT_SIZE;
+  p1Label.fontWeight = 'bold';
   p1Label.color = P1_HUD_COLOR;
   p1Label.fontFamily = 'monospace';
   p1Label.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -67,6 +76,7 @@ export function createHud(scene: Scene): HudElements {
 
   const p2Label = new TextBlock('p2Label', 'P2: OKL; + \u2190/\u2192 + P');
   p2Label.fontSize = HUD_LABEL_FONT_SIZE;
+  p2Label.fontWeight = 'bold';
   p2Label.color = P2_HUD_COLOR;
   p2Label.fontFamily = 'monospace';
   p2Label.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
@@ -77,6 +87,7 @@ export function createHud(scene: Scene): HudElements {
 
   const p1Cooldown = new TextBlock('p1Cooldown', '');
   p1Cooldown.fontSize = HUD_COOLDOWN_FONT_SIZE;
+  p1Cooldown.fontWeight = 'bold';
   p1Cooldown.color = P1_HUD_COLOR;
   p1Cooldown.fontFamily = 'monospace';
   p1Cooldown.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -87,6 +98,7 @@ export function createHud(scene: Scene): HudElements {
 
   const p2Cooldown = new TextBlock('p2Cooldown', '');
   p2Cooldown.fontSize = HUD_COOLDOWN_FONT_SIZE;
+  p2Cooldown.fontWeight = 'bold';
   p2Cooldown.color = P2_HUD_COLOR;
   p2Cooldown.fontFamily = 'monospace';
   p2Cooldown.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
