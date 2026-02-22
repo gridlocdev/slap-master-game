@@ -21,7 +21,7 @@ import kb_semicolon from '../assets/ui/kenney-input-prompts/keyboard/keyboard_se
 import kb_arrow_left from '../assets/ui/kenney-input-prompts/keyboard/keyboard_arrow_left.png';
 import kb_arrow_right from '../assets/ui/kenney-input-prompts/keyboard/keyboard_arrow_right.png';
 import kb_space from '../assets/ui/kenney-input-prompts/keyboard/keyboard_space.png';
-import kb_tilde from '../assets/ui/kenney-input-prompts/keyboard/keyboard_tilde.png';
+import kb_shift from '../assets/ui/kenney-input-prompts/keyboard/keyboard_shift.png';
 import kb_escape from '../assets/ui/kenney-input-prompts/keyboard/keyboard_escape.png';
 import kb_backspace from '../assets/ui/kenney-input-prompts/keyboard/keyboard_backspace.png';
 import kb_device from '../assets/ui/kenney-input-prompts/keyboard/keyboard.png';
@@ -61,7 +61,7 @@ export const KB_ICONS: Record<string, string> = {
   arrow_left: kb_arrow_left,
   arrow_right: kb_arrow_right,
   space: kb_space,
-  tilde: kb_tilde,
+  shift: kb_shift,
   escape: kb_escape,
   backspace: kb_backspace,
   device: kb_device,

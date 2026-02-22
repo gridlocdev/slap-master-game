@@ -455,7 +455,7 @@ export function createSelectionUI(scene: Scene): SelectionUI {
     { icon: KB_ICONS.escape },
     { text: 'back' },
     { text: '   ' },
-    { icon: KB_ICONS.tilde },
+    { icon: KB_ICONS.shift },
     { text: 'setup' },
   ], { iconSize: ICON_SIZE.md, fontSize: 18, color: P1_HUD_COLOR, gap: 3, name: 'ctrlP1Kb' });
   p1KbRow.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -493,7 +493,7 @@ export function createSelectionUI(scene: Scene): SelectionUI {
     { icon: KB_ICONS.backspace },
     { text: 'back' },
     { text: '   ' },
-    { icon: KB_ICONS.tilde },
+    { icon: KB_ICONS.shift },
     { text: 'setup' },
   ], { iconSize: ICON_SIZE.md, fontSize: 18, color: P2_HUD_COLOR, gap: 3, name: 'ctrlP2Kb' });
   p2KbRow.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;

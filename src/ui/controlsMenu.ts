@@ -14,8 +14,8 @@ export interface ControlsMenuUI {
   ui: AdvancedDynamicTexture;
 }
 
-const ICON = ICON_SIZE.lg;
-const FONT = 20;
+const ICON = ICON_SIZE.md;
+const FONT = 16;
 const ROW_H = `${ICON + 6}px`;
 const COL_W = '440px';
 
@@ -61,100 +61,143 @@ export function createControlsMenu(scene: Scene): ControlsMenuUI {
 
   // Title
   const title = new TextBlock('ctrlTitle', 'CONTROLS');
-  title.fontSize = 52;
+  title.fontSize = 44;
   title.fontFamily = 'monospace';
   title.fontWeight = 'bold';
   title.color = '#ffffff';
   title.outlineWidth = 4;
   title.outlineColor = '#000000';
   title.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-  title.top = '16px';
-  title.height = '68px';
+  title.top = '12px';
+  title.height = '60px';
   panel.addControl(title);
 
-  // Two-column layout
-  const columnsRow = new StackPanel('ctrlColumns');
-  columnsRow.isVertical = false;
-  columnsRow.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-  columnsRow.top = '86px';
-  columnsRow.height = '560px';
-  columnsRow.width = '920px';
-  panel.addControl(columnsRow);
+  // Vertical content area
+  const contentArea = new StackPanel('ctrlContent');
+  contentArea.isVertical = true;
+  contentArea.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+  contentArea.top = '74px';
+  contentArea.height = '580px';
+  contentArea.width = '920px';
+  panel.addControl(contentArea);
 
-  // ---- Keyboard column ----
-  const kbCol = new StackPanel('ctrlKbCol');
-  kbCol.isVertical = true;
-  kbCol.width = COL_W;
-  kbCol.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-  kbCol.paddingLeft = '20px';
-  columnsRow.addControl(kbCol);
-
-  // KB header
-  const kbHeader = createIconRow(
-    [{ icon: KB_ICONS.device }, { text: ' Keyboard' }],
-    { iconSize: ICON, fontSize: 24, color: '#ffffff', gap: 6 },
-  );
-  kbCol.addControl(kbHeader);
-
-  // P1
-  kbCol.addControl(sectionLabel('— P1 —', P1_HUD_COLOR));
-  kbCol.addControl(controlRow('Move  ', iconsFromKeys(P1_KB_MOVE, KB_ICONS)));
-  kbCol.addControl(controlRow('Slap  ', iconsFromKeys(P1_KB_SLAP, KB_ICONS)));
-  kbCol.addControl(controlRow('Ability  ', iconsFromKeys(P1_KB_ABILITY, KB_ICONS)));
-
-  // P2
-  kbCol.addControl(sectionLabel('— P2 —', P2_HUD_COLOR));
-  kbCol.addControl(controlRow('Move  ', iconsFromKeys(P2_KB_MOVE, KB_ICONS)));
-  kbCol.addControl(controlRow('Slap  ', iconsFromKeys(P2_KB_SLAP, KB_ICONS)));
-  kbCol.addControl(controlRow('Ability  ', iconsFromKeys(P2_KB_ABILITY, KB_ICONS)));
-
-  // Shared keyboard
-  kbCol.addControl(sectionLabel('— Shared —'));
-  kbCol.addControl(controlRow('Pause  ', [{ icon: KB_ICONS.escape }]));
-  kbCol.addControl(controlRow('Confirm  ', [{ icon: KB_ICONS.space }]));
-  kbCol.addControl(controlRow('Input Setup  ', [{ icon: KB_ICONS.tilde }]));
-
-  // ---- Divider ----
-  const divider = new Rectangle('ctrlDivider');
-  divider.width = '2px';
-  divider.height = 1;
-  divider.thickness = 0;
-  divider.background = '#555577';
-  columnsRow.addControl(divider);
-
-  // ---- Gamepad column ----
-  const gpCol = new StackPanel('ctrlGpCol');
-  gpCol.isVertical = true;
-  gpCol.width = COL_W;
-  gpCol.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-  gpCol.paddingLeft = '20px';
-  columnsRow.addControl(gpCol);
-
-  // GP header
+  // ---- Gamepad section (top) ----
   const gpHeader = createIconRow(
     [{ icon: GP_ICONS.device }, { text: ' Gamepad' }],
-    { iconSize: ICON, fontSize: 24, color: '#ffffff', gap: 6 },
+    { iconSize: ICON, fontSize: 20, color: '#ffffff', gap: 6 },
   );
-  gpCol.addControl(gpHeader);
+  contentArea.addControl(gpHeader);
 
-  // Spacer to align with keyboard section
-  gpCol.addControl(sectionLabel(''));
+  // Gamepad two-column row (Game | Menu)
+  const gpColumnsRow = new StackPanel('gpColumns');
+  gpColumnsRow.isVertical = false;
+  gpColumnsRow.height = `${5 * (ICON + 6)}px`;
+  gpColumnsRow.width = '800px';
+  gpColumnsRow.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+  contentArea.addControl(gpColumnsRow);
 
-  gpCol.addControl(controlRow('Move  ', [
+  // GP left: game controls
+  const gpLeftCol = new StackPanel('gpLeftCol');
+  gpLeftCol.isVertical = true;
+  gpLeftCol.width = '400px';
+  gpLeftCol.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+  gpLeftCol.paddingLeft = '20px';
+  gpColumnsRow.addControl(gpLeftCol);
+
+  gpLeftCol.addControl(sectionLabel('— Game —'));
+  gpLeftCol.addControl(controlRow('Move  ', [
     { icon: GP_ICONS.stick_l }, { text: ' / ' }, { icon: GP_ICONS.dpad },
   ]));
-  gpCol.addControl(controlRow('Slap  ', [
+  gpLeftCol.addControl(controlRow('Slap  ', [
     { icon: GP_ICONS.lt }, { icon: GP_ICONS.rt },
   ]));
-  gpCol.addControl(controlRow('Ability  ', [{ icon: GP_ICONS.x }]));
+  gpLeftCol.addControl(controlRow('Ability  ', [{ icon: GP_ICONS.x }]));
 
-  // Spacer to separate game vs UI controls
-  gpCol.addControl(sectionLabel(''));
+  // GP right: menu controls
+  const gpRightCol = new StackPanel('gpRightCol');
+  gpRightCol.isVertical = true;
+  gpRightCol.width = '400px';
+  gpRightCol.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+  gpRightCol.paddingLeft = '20px';
+  gpColumnsRow.addControl(gpRightCol);
 
-  gpCol.addControl(controlRow('Pause  ', [{ icon: GP_ICONS.view }]));
-  gpCol.addControl(controlRow('Back / Menu  ', [{ icon: GP_ICONS.b }]));
-  gpCol.addControl(controlRow('Confirm  ', [{ icon: GP_ICONS.a }]));
-  gpCol.addControl(controlRow('Input Setup  ', [{ icon: GP_ICONS.back }]));
+  gpRightCol.addControl(sectionLabel('— Menu —'));
+  gpRightCol.addControl(controlRow('Pause  ', [{ icon: GP_ICONS.view }]));
+  gpRightCol.addControl(controlRow('Back / Menu  ', [{ icon: GP_ICONS.b }]));
+  gpRightCol.addControl(controlRow('Confirm  ', [{ icon: GP_ICONS.a }]));
+  gpRightCol.addControl(controlRow('Input Setup  ', [{ icon: GP_ICONS.back }]));
+
+  // ---- Horizontal divider ----
+  const hDividerWrap = new Rectangle('ctrlHDividerWrap');
+  hDividerWrap.width = 1;
+  hDividerWrap.height = '16px';
+  hDividerWrap.thickness = 0;
+  contentArea.addControl(hDividerWrap);
+
+  const hDividerLine = new Rectangle('ctrlHDividerLine');
+  hDividerLine.width = '880px';
+  hDividerLine.height = '2px';
+  hDividerLine.thickness = 0;
+  hDividerLine.background = '#555577';
+  hDividerWrap.addControl(hDividerLine);
+
+  // ---- Keyboard section (bottom) ----
+  const kbHeader = createIconRow(
+    [{ icon: KB_ICONS.device }, { text: ' Keyboard' }],
+    { iconSize: ICON, fontSize: 20, color: '#ffffff', gap: 6 },
+  );
+  contentArea.addControl(kbHeader);
+
+  // KB P1/P2 side by side
+  const kbPlayersRow = new StackPanel('kbPlayersRow');
+  kbPlayersRow.isVertical = false;
+  kbPlayersRow.height = `${4 * (ICON + 6)}px`;
+  kbPlayersRow.width = '900px';
+  contentArea.addControl(kbPlayersRow);
+
+  // KB P1 column (left)
+  const kbP1Col = new StackPanel('kbP1Col');
+  kbP1Col.isVertical = true;
+  kbP1Col.width = COL_W;
+  kbP1Col.paddingLeft = '20px';
+  kbPlayersRow.addControl(kbP1Col);
+
+  kbP1Col.addControl(sectionLabel('— P1 —', P1_HUD_COLOR));
+  kbP1Col.addControl(controlRow('Move  ', iconsFromKeys(P1_KB_MOVE, KB_ICONS)));
+  kbP1Col.addControl(controlRow('Slap  ', iconsFromKeys(P1_KB_SLAP, KB_ICONS)));
+  kbP1Col.addControl(controlRow('Ability  ', iconsFromKeys(P1_KB_ABILITY, KB_ICONS)));
+
+  // KB P1/P2 vertical divider
+  const kbPlayerDivider = new Rectangle('kbPlayerDivider');
+  kbPlayerDivider.width = '2px';
+  kbPlayerDivider.height = 1;
+  kbPlayerDivider.thickness = 0;
+  kbPlayerDivider.background = '#555577';
+  kbPlayersRow.addControl(kbPlayerDivider);
+
+  // KB P2 column (right)
+  const kbP2Col = new StackPanel('kbP2Col');
+  kbP2Col.isVertical = true;
+  kbP2Col.width = COL_W;
+  kbP2Col.paddingLeft = '20px';
+  kbPlayersRow.addControl(kbP2Col);
+
+  kbP2Col.addControl(sectionLabel('— P2 —', P2_HUD_COLOR));
+  kbP2Col.addControl(controlRow('Move  ', iconsFromKeys(P2_KB_MOVE, KB_ICONS)));
+  kbP2Col.addControl(controlRow('Slap  ', iconsFromKeys(P2_KB_SLAP, KB_ICONS)));
+  kbP2Col.addControl(controlRow('Ability  ', iconsFromKeys(P2_KB_ABILITY, KB_ICONS)));
+
+  // KB Shared controls (centered below P1/P2)
+  const kbSharedCol = new StackPanel('kbSharedCol');
+  kbSharedCol.isVertical = true;
+  kbSharedCol.width = COL_W;
+  kbSharedCol.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+  contentArea.addControl(kbSharedCol);
+
+  kbSharedCol.addControl(sectionLabel('— Menu —'));
+  kbSharedCol.addControl(controlRow('Pause  ', [{ icon: KB_ICONS.escape }]));
+  kbSharedCol.addControl(controlRow('Confirm  ', [{ icon: KB_ICONS.space }]));
+  kbSharedCol.addControl(controlRow('Input Setup  ', [{ icon: KB_ICONS.shift }]));
 
   // Bottom hint
   const hint = createIconRow(
@@ -164,10 +207,10 @@ export function createControlsMenu(scene: Scene): ControlsMenuUI {
       { icon: GP_ICONS.b },
       { text: ' = Close' },
     ],
-    { iconSize: ICON_SIZE.md, fontSize: 16, color: '#888888', gap: 4 },
+    { iconSize: ICON_SIZE.sm, fontSize: 14, color: '#888888', gap: 4 },
   );
   hint.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-  hint.top = '-16px';
+  hint.top = '-12px';
   panel.addControl(hint);
 
   return { ui };
