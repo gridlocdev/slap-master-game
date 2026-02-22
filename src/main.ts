@@ -106,9 +106,27 @@ engine.runRenderLoop(() => {
       gamePhase = 'playing';
       setHudVisible(hud, true);
     }
-    // Show players in their starting positions during countdown
+
+    // Read input (same as playing phase)
+    let p1Input = readInput(P1_KEYS);
+    let p2Input = readInput(P2_KEYS);
+    const p1Pad = getP1GamepadIndex();
+    const p2Pad = getP2GamepadIndex();
+    const gp1 = p1Pad !== null ? readGamepadInput(p1Pad) : null;
+    const gp2 = p2Pad !== null ? readGamepadInput(p2Pad) : null;
+    if (gp1) p1Input = mergeInput(p1Input, gp1);
+    if (gp2) p2Input = mergeInput(p2Input, gp2);
+
+    // During countdown: only slapping allowed (no movement, no abilities)
+    p1Input.forward = p1Input.back = p1Input.left = p1Input.right = p1Input.ability = false;
+    p2Input.forward = p2Input.back = p2Input.left = p2Input.right = p2Input.ability = false;
+
+    // Run game logic (movement, slapping, knockback — everything except abilities)
+    updateGame(state, p1Input, p2Input, dt);
+
     updatePlayerMeshes(playerMeshes[0], state.players[0], 0, dt);
     updatePlayerMeshes(playerMeshes[1], state.players[1], 1, dt);
+    updateEffects(effectsPool, state);
 
   } else {
     // Keyboard input
