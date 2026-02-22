@@ -17,6 +17,8 @@ import {
 } from './ui/selection.ts';
 import { createCountdownUI, updateCountdown, destroyCountdown } from './ui/countdown.ts';
 import type { CountdownUI } from './ui/countdown.ts';
+import { createMainMenuUI, updateMainMenu, destroyMainMenu } from './ui/mainMenu.ts';
+import type { MainMenuUI } from './ui/mainMenu.ts';
 import { P1_KEYS, P2_KEYS, RESTART_DELAY } from './constants.ts';
 import { initDefaultAssignment, getP1GamepadIndex, getP2GamepadIndex } from './ui/inputAssign.ts';
 import type { AbilityType } from './types.ts';
@@ -37,25 +39,29 @@ const effectsPool = createEffectsPool(scene);
 
 initDefaultAssignment();
 let state = createSelectionState();
-let selectionUI = createSelectionUI(scene);
-let gamePhase: 'selecting' | 'countdown' | 'playing' = 'selecting';
+let selectionUI: ReturnType<typeof createSelectionUI> | null = null;
+let mainMenuUI: MainMenuUI | null = createMainMenuUI(scene);
+let gamePhase: 'menu' | 'selecting' | 'countdown' | 'playing' = 'menu';
 let savedCamera: { pos: Vector3; target: Vector3 } | null = null;
 let scoreApplied = false; // track whether we've already credited the round win
 let countdownUI: CountdownUI | null = null;
 
-// Enter selection mode
+// Enter menu mode
 setHudVisible(hud, false);
 setArenaMeshesVisible(scene, false);
 savedCamera = enterSelectionCamera(camera);
-setPlayerMeshesVisible(playerMeshes[0], true);
-setPlayerMeshesVisible(playerMeshes[1], true);
+setPlayerMeshesVisible(playerMeshes[0], false);
+setPlayerMeshesVisible(playerMeshes[1], false);
 
 function startGame(p1Ability: AbilityType, p2Ability: AbilityType, scores: [number, number] = [0, 0]): void {
   state = createInitialState(p1Ability, p2Ability, scores);
   scoreApplied = false;
   gamePhase = 'countdown';
   countdownUI = createCountdownUI(scene);
-  destroySelectionUI(selectionUI);
+  if (selectionUI) {
+    destroySelectionUI(selectionUI);
+    selectionUI = null;
+  }
   setHudVisible(hud, false);
   setArenaMeshesVisible(scene, true);
   if (savedCamera) {
@@ -75,24 +81,37 @@ function startNextRound(): void {
   setHudVisible(hud, false);
 }
 
-function goToSelection(): void {
+function goToMenu(): void {
   state = createSelectionState();
-  gamePhase = 'selecting';
-  selectionUI = createSelectionUI(scene);
+  gamePhase = 'menu';
+  mainMenuUI = createMainMenuUI(scene);
   setHudVisible(hud, false);
   setArenaMeshesVisible(scene, false);
   savedCamera = enterSelectionCamera(camera);
-  setPlayerMeshesVisible(playerMeshes[0], true);
-  setPlayerMeshesVisible(playerMeshes[1], true);
+  setPlayerMeshesVisible(playerMeshes[0], false);
+  setPlayerMeshesVisible(playerMeshes[1], false);
 }
 
 engine.runRenderLoop(() => {
   const dt = engine.getDeltaTime() / 1000;
   pollGamepads();
 
-  if (gamePhase === 'selecting') {
-    const bothReady = updateSelection(selectionUI, state);
-    updateSelectionMeshes(playerMeshes, dt, getHoveredAbilities(selectionUI));
+  if (gamePhase === 'menu') {
+    if (mainMenuUI) {
+      const action = updateMainMenu(mainMenuUI);
+      if (action === 'local') {
+        destroyMainMenu(mainMenuUI);
+        mainMenuUI = null;
+        gamePhase = 'selecting';
+        selectionUI = createSelectionUI(scene);
+        setPlayerMeshesVisible(playerMeshes[0], true);
+        setPlayerMeshesVisible(playerMeshes[1], true);
+      }
+    }
+
+  } else if (gamePhase === 'selecting') {
+    const bothReady = updateSelection(selectionUI!, state);
+    updateSelectionMeshes(playerMeshes, dt, getHoveredAbilities(selectionUI!));
     if (bothReady) {
       const p1Ability = state.selections[0]!;
       const p2Ability = state.selections[1]!;
@@ -157,7 +176,7 @@ engine.runRenderLoop(() => {
       if (canRestart && restartPressed) {
         const setWon = state.scores[state.winner] >= state.roundsToWin;
         if (setWon) {
-          goToSelection();
+          goToMenu();
         } else {
           startNextRound();
         }

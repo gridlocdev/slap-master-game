@@ -223,6 +223,11 @@ export const SELECTION_FLOOR_W = 14;
 export const SELECTION_FLOOR_D = 8;
 export const SELECTION_FLOOR_COLOR: Color3Tuple = [0.12, 0.12, 0.2];
 
+// Main menu
+export const MENU_TITLE_FONT_SIZE = 90;
+export const MENU_BUTTON_FONT_SIZE = 18;
+export const MENU_STICK_THRESHOLD = 0.5;
+
 // Input assignment overlay
 export const GAMEPAD_SELECT_BUTTON = 8;
 export const INPUT_ASSIGN_BG = '#000000dd';
