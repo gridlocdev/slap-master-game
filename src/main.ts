@@ -30,6 +30,8 @@ import { createSettingsMenu, updateSettingsMenu, destroySettingsMenu } from './u
 import type { SettingsMenuUI } from './ui/settingsMenu.ts';
 import { RESTART_DELAY } from './constants.ts';
 import { initDefaultAssignment } from './ui/inputAssign.ts';
+import { createAIState, updateAI } from './ai/aiController.ts';
+import type { AIState } from './ai/aiConfig.ts';
 import {
   loadSettings, hasSavedSettings, applySettingsToInputAssign,
   getP1KeyMap, getP2KeyMap, getP1PadIndex, getP2PadIndex,
@@ -69,10 +71,8 @@ let controlsUI: ControlsMenuUI | null = null;
 let difficultyUI: DifficultyMenuUI | null = null;
 let settingsUI: SettingsMenuUI | null = null;
 let gameMode: GameMode = 'local';
-// Stored for future AI gameplay logic
-// @ts-expect-error written but not yet read — used once AI gameplay is implemented
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let aiDifficulty: AIDifficulty = 'medium';
+let aiState: AIState | null = null;
 
 // Enter menu mode
 setHudVisible(hud, false);
@@ -83,6 +83,9 @@ setPlayerMeshesVisible(playerMeshes[1], false);
 
 function startGame(p1Ability: AbilityType, p2Ability: AbilityType, scores: [number, number] = [0, 0]): void {
   state = createInitialState(p1Ability, p2Ability, scores);
+  if (gameMode === 'ai') {
+    aiState = createAIState();
+  }
   scoreApplied = false;
   gamePhase = 'countdown';
   countdownUI = createCountdownUI(scene);
@@ -103,6 +106,10 @@ function startNextRound(): void {
   const p2Ability = state.players[1].ability;
   const scores = state.scores;
   state = createInitialState(p1Ability, p2Ability, scores);
+  if (gameMode === 'ai') {
+    // Preserve adaptation data for Hard difficulty across rounds
+    aiState = createAIState(aiState?.adaptation);
+  }
   scoreApplied = false;
   gamePhase = 'countdown';
   countdownUI = createCountdownUI(scene);
@@ -276,15 +283,21 @@ engine.runRenderLoop(() => {
 
       // Read input (same as playing phase)
       const p1KeyMap = getP1KeyMap();
-      const p2KeyMap = getP2KeyMap();
       let p1Input: PlayerInput = p1KeyMap ? readInput(p1KeyMap) : { forward: false, back: false, left: false, right: false, slapLeft: false, slapRight: false, ability: false };
-      let p2Input: PlayerInput = p2KeyMap ? readInput(p2KeyMap) : { forward: false, back: false, left: false, right: false, slapLeft: false, slapRight: false, ability: false };
       const p1Pad = getP1PadIndex();
-      const p2Pad = getP2PadIndex();
       const gp1 = p1Pad !== null ? readGamepadInput(p1Pad) : null;
-      const gp2 = p2Pad !== null ? readGamepadInput(p2Pad) : null;
       if (gp1) p1Input = mergeInput(p1Input, gp1);
-      if (gp2) p2Input = mergeInput(p2Input, gp2);
+
+      let p2Input: PlayerInput;
+      if (gameMode === 'ai' && aiState) {
+        p2Input = updateAI(state, aiState, aiDifficulty, dt);
+      } else {
+        const p2KeyMap = getP2KeyMap();
+        p2Input = p2KeyMap ? readInput(p2KeyMap) : { forward: false, back: false, left: false, right: false, slapLeft: false, slapRight: false, ability: false };
+        const p2Pad = getP2PadIndex();
+        const gp2 = p2Pad !== null ? readGamepadInput(p2Pad) : null;
+        if (gp2) p2Input = mergeInput(p2Input, gp2);
+      }
 
       // During countdown: only slapping allowed (no movement, no abilities)
       p1Input.forward = p1Input.back = p1Input.left = p1Input.right = p1Input.ability = false;
@@ -321,17 +334,21 @@ engine.runRenderLoop(() => {
     } else {
       // Read input based on control scheme settings
       const p1KeyMap = getP1KeyMap();
-      const p2KeyMap = getP2KeyMap();
       let p1Input: PlayerInput = p1KeyMap ? readInput(p1KeyMap) : { forward: false, back: false, left: false, right: false, slapLeft: false, slapRight: false, ability: false };
-      let p2Input: PlayerInput = p2KeyMap ? readInput(p2KeyMap) : { forward: false, back: false, left: false, right: false, slapLeft: false, slapRight: false, ability: false };
-
-      // Merge gamepad input (use settings-assigned pad indices)
       const p1Pad = getP1PadIndex();
-      const p2Pad = getP2PadIndex();
+      const p2Pad = gameMode !== 'ai' ? getP2PadIndex() : null;
       const gp1 = p1Pad !== null ? readGamepadInput(p1Pad) : null;
-      const gp2 = p2Pad !== null ? readGamepadInput(p2Pad) : null;
       if (gp1) p1Input = mergeInput(p1Input, gp1);
-      if (gp2) p2Input = mergeInput(p2Input, gp2);
+
+      let p2Input: PlayerInput;
+      if (gameMode === 'ai' && aiState) {
+        p2Input = updateAI(state, aiState, aiDifficulty, dt);
+      } else {
+        const p2KeyMap = getP2KeyMap();
+        p2Input = p2KeyMap ? readInput(p2KeyMap) : { forward: false, back: false, left: false, right: false, slapLeft: false, slapRight: false, ability: false };
+        const gp2 = p2Pad !== null ? readGamepadInput(p2Pad) : null;
+        if (gp2) p2Input = mergeInput(p2Input, gp2);
+      }
 
       if (state.winner !== null) {
         // Credit round win once
