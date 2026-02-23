@@ -43,7 +43,8 @@ export function createMainMenuUI(scene: Scene): MainMenuUI {
   title.outlineWidth = 8;
   title.outlineColor = '#000000';
   title.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-  title.top = '15%';
+  title.top = '3%';
+  title.height = '120px';
   ui.addControl(title);
 
   // Button row
