@@ -1,10 +1,12 @@
 import type { GameState, PlayerInput, AIDifficulty, Vec2, PlayerState } from '../types.ts';
 import type { AIState, AIDifficultyConfig, AdaptationData } from './aiConfig.ts';
 import { AI_CONFIGS, EMPTY_INPUT } from './aiConfig.ts';
+import type { MelonState } from '../types.ts';
 import {
   ARENA_X, ARENA_W, ARENA_Y, ARENA_H,
   MELON_EXPLODE_RADIUS,
   DASH_SPEED, DASH_DURATION,
+  PLAYER_RADIUS, HAND_RADIUS,
 } from '../constants.ts';
 
 // ============================================================
@@ -375,6 +377,140 @@ function checkMelonDoubleSlap(
 }
 
 // ============================================================
+// Melon Awareness Helpers
+// ============================================================
+
+/** Speed threshold: melons above this are "incoming projectiles", below are "stationary obstacles" */
+const MELON_SPEED_THREAT = 2.0;
+
+interface MelonThreat {
+  melon: MelonState;
+  dist: number;
+  speed: number;
+  isIncoming: boolean; // moving toward AI
+}
+
+/** Find the most threatening melon within awareness radius */
+function findNearestThreat(ai: PlayerState, state: GameState, config: AIDifficultyConfig): MelonThreat | null {
+  if (config.melonAwarenessRadius <= 0 || state.melons.length === 0) return null;
+
+  let best: MelonThreat | null = null;
+
+  for (const melon of state.melons) {
+    // Skip own melons for threat detection
+    if (melon.owner === 1) continue;
+
+    const d = dist(ai.pos, melon.pos);
+    if (d > config.melonAwarenessRadius) continue;
+
+    const speed = Math.sqrt(melon.vel.x * melon.vel.x + melon.vel.y * melon.vel.y);
+
+    // Check if melon is moving toward AI
+    let isIncoming = false;
+    if (speed > MELON_SPEED_THREAT) {
+      const toAi = { x: ai.pos.x - melon.pos.x, y: ai.pos.y - melon.pos.y };
+      const dot = melon.vel.x * toAi.x + melon.vel.y * toAi.y;
+      isIncoming = dot > 0;
+    }
+
+    // Prioritize: incoming fast melons first, then closest
+    if (!best || (isIncoming && !best.isIncoming) || (isIncoming === best.isIncoming && d < best.dist)) {
+      best = { melon, dist: d, speed, isIncoming };
+    }
+  }
+
+  return best;
+}
+
+/** Find nearest melon (any owner) near AI for proximity fear */
+function findNearestMelonToAi(ai: PlayerState, state: GameState, radius: number): { melon: MelonState; dist: number } | null {
+  let best: { melon: MelonState; dist: number } | null = null;
+  for (const melon of state.melons) {
+    const d = dist(ai.pos, melon.pos);
+    if (d < radius && (!best || d < best.dist)) {
+      best = { melon, dist: d };
+    }
+  }
+  return best;
+}
+
+/** Dodge direction: perpendicular to melon velocity (or away if stationary) */
+function getMelonDodgeDir(ai: PlayerState, melon: MelonState): Vec2 {
+  const speed = Math.sqrt(melon.vel.x * melon.vel.x + melon.vel.y * melon.vel.y);
+  if (speed > MELON_SPEED_THREAT) {
+    // Perpendicular to melon velocity — pick side that moves AI away from melon
+    const perp1: Vec2 = { x: -melon.vel.y, y: melon.vel.x };
+    const perp2: Vec2 = { x: melon.vel.y, y: -melon.vel.x };
+    const awayFromMelon = { x: ai.pos.x - melon.pos.x, y: ai.pos.y - melon.pos.y };
+    const dot1 = perp1.x * awayFromMelon.x + perp1.y * awayFromMelon.y;
+    return normalize(dot1 > 0 ? perp1 : perp2);
+  }
+  // Stationary: move directly away
+  return normalize({ x: ai.pos.x - melon.pos.x, y: ai.pos.y - melon.pos.y });
+}
+
+/** Check if opponent can detonate (both hands idle = ready for double-slap) */
+function opponentCanDetonate(opponent: PlayerState): boolean {
+  return opponent.hands[0].state === 'idle' && opponent.hands[1].state === 'idle';
+}
+
+/** Check if AI should flee from a nearby melon (opponent might detonate) */
+function shouldFleeFromMelon(
+  ai: PlayerState, opponent: PlayerState, melon: MelonState, config: AIDifficultyConfig,
+): boolean {
+  if (config.melonProximityFear <= 0) return false;
+  const melonDist = dist(ai.pos, melon.pos);
+  if (melonDist > config.melonProximityFear) return false;
+  // More urgent near edges
+  const selfEdge = edgeDistances(ai.pos).min;
+  const edgeUrgency = selfEdge < 2.0 ? 1.5 : 1.0;
+  return melonDist < config.melonProximityFear * edgeUrgency && opponentCanDetonate(opponent);
+}
+
+/** Check if AI should try to slap a nearby melon (redirect it) */
+function shouldSlapAtMelon(
+  ai: PlayerState, melon: MelonState, config: AIDifficultyConfig,
+): boolean {
+  if (config.melonSlapBackChance <= 0) return false;
+  if (!hasIdleHand(ai)) return false;
+  // Melon must be within slap reach
+  const melonDist = dist(ai.pos, melon.pos);
+  const slapReach = PLAYER_RADIUS + HAND_RADIUS + 0.85; // hand offset + reach extension
+  if (melonDist > slapReach * 1.3) return false;
+  return Math.random() < config.melonSlapBackChance;
+}
+
+/** Expert: check if we should detonate an opponent's melon near them */
+function shouldDetonateOpponentMelon(
+  ai: PlayerState, opponent: PlayerState, state: GameState,
+): boolean {
+  for (const melon of state.melons) {
+    if (melon.owner === 1) continue; // skip own melons
+    const melonToOpp = dist(melon.pos, opponent.pos);
+    if (melonToOpp > MELON_EXPLODE_RADIUS) continue;
+    const aiToMelon = dist(ai.pos, melon.pos);
+    // Only detonate if AI is outside blast radius
+    if (aiToMelon > MELON_EXPLODE_RADIUS * 0.8) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Find nearest melon to use for herding (push opponent toward it) */
+function findMelonForHerding(opponent: PlayerState, state: GameState): MelonState | null {
+  let best: { melon: MelonState; dist: number } | null = null;
+  for (const melon of state.melons) {
+    const d = dist(opponent.pos, melon.pos);
+    // Melon should be near-ish to opponent but not right on top
+    if (d > 1.5 && d < 5.0 && (!best || d < best.dist)) {
+      best = { melon, dist: d };
+    }
+  }
+  return best?.melon ?? null;
+}
+
+// ============================================================
 // Easy AI — "The Newbie"
 // ============================================================
 
@@ -462,6 +598,10 @@ function evaluateMedium(
   const aggressionMod = score.roundsBehind * config.scoreSensitivity * 0.1;
   const effectiveAggression = Math.min(1, config.aggressionBias + aggressionMod);
 
+  // Melon awareness (computed once, used in priority chain)
+  const melonThreat = findNearestThreat(ai, state, config);
+  const nearbyMelon = findNearestMelonToAi(ai, state, config.melonProximityFear);
+
   // Priority 1: Edge flee (backward only)
   if (selfEdge.min < config.edgeFearDist) {
     // Medium retreats backward (toward opponent's side), not toward center
@@ -475,13 +615,29 @@ function evaluateMedium(
       y: centerDir.y * 0.3 + (-toOpponent.y) * 0.7,
     });
   }
-  // Priority 2: Dodge incoming (biased direction)
+  // Priority 2a: Dodge incoming fast melon
+  else if (melonThreat && melonThreat.isIncoming && melonThreat.dist < 4 && Math.random() < config.melonDodgeChance) {
+    moveDir = getMelonDodgeDir(ai, melonThreat.melon);
+  }
+  // Priority 2b: Flee from nearby melon when opponent can detonate
+  else if (nearbyMelon && shouldFleeFromMelon(ai, opponent, nearbyMelon.melon, config)) {
+    moveDir = getMelonDodgeDir(ai, nearbyMelon.melon);
+  }
+  // Priority 2c: Slap nearby opponent melon away
+  else if (melonThreat && !melonThreat.isIncoming && shouldSlapAtMelon(ai, melonThreat.melon, config)) {
+    // Move toward melon and slap — random direction redirect
+    moveDir = normalize({ x: melonThreat.melon.pos.x - ai.pos.x, y: melonThreat.melon.pos.y - ai.pos.y });
+    const hand = pickAlternateHand(ai);
+    slapLeft = hand.slapLeft;
+    slapRight = hand.slapRight;
+  }
+  // Priority 3: Dodge incoming attack (biased direction)
   else if (opponentWindingUp(opponent) && Math.random() < config.dodgeProbability) {
     // Strafe in biased direction 65% of the time
     const dodgeSign = Math.random() < config.strafeBias ? aiState.strafeSide : -aiState.strafeSide;
     moveDir = { x: strafeDir.x * dodgeSign, y: strafeDir.y * dodgeSign };
   }
-  // Priority 3: Hesitation
+  // Priority 4: Hesitation
   else if (aiState.hesitationTimer > 0) {
     const wanderAngle = aiState.jitterAngle * Math.PI / 180;
     moveDir = { x: Math.cos(wanderAngle), y: Math.sin(wanderAngle) };
@@ -612,9 +768,34 @@ function evaluateHard(
     effectiveAggression = Math.min(effectiveAggression, 0.65); // tighter play
   }
 
+  // Melon awareness (computed once)
+  const melonThreat = findNearestThreat(ai, state, config);
+  const nearbyMelon = findNearestMelonToAi(ai, state, config.melonProximityFear);
+
   // Priority 1: Edge flee toward center
   if (selfEdge.min < effectiveEdgeFear) {
     moveDir = vecToCenter(ai.pos);
+  }
+  // Priority 1b: Dodge incoming fast melon
+  else if (melonThreat && melonThreat.isIncoming && melonThreat.dist < 5 && Math.random() < config.melonDodgeChance) {
+    moveDir = getMelonDodgeDir(ai, melonThreat.melon);
+  }
+  // Priority 1c: Flee melon when opponent can detonate + near edge
+  else if (nearbyMelon && shouldFleeFromMelon(ai, opponent, nearbyMelon.melon, config)) {
+    const awayFromMelon = getMelonDodgeDir(ai, nearbyMelon.melon);
+    const centerDir = vecToCenter(ai.pos);
+    moveDir = normalize({
+      x: awayFromMelon.x * 0.6 + centerDir.x * 0.4,
+      y: awayFromMelon.y * 0.6 + centerDir.y * 0.4,
+    });
+  }
+  // Priority 1d: Slap opponent melon back toward them
+  else if (melonThreat && shouldSlapAtMelon(ai, melonThreat.melon, config)) {
+    // Move toward melon, slap it in opponent's direction
+    moveDir = normalize({ x: melonThreat.melon.pos.x - ai.pos.x, y: melonThreat.melon.pos.y - ai.pos.y });
+    const hand = pickAlternateHand(ai);
+    slapLeft = hand.slapLeft;
+    slapRight = hand.slapRight;
   }
   // Priority 2: Anti-rush — counter opponent spam aggression
   else if (isOpponentRushing(ai, opponent, aiState.adaptation, config.slapRange)) {
@@ -751,6 +932,17 @@ function evaluateHard(
       });
     }
 
+    // Melon herding: push opponent toward nearest melon on field
+    const herdMelon = findMelonForHerding(opponent, state);
+    if (herdMelon && d > config.approachDist) {
+      const melonDir = normalize({ x: herdMelon.pos.x - opponent.pos.x, y: herdMelon.pos.y - opponent.pos.y });
+      // Approach from side opposite to melon (push opponent toward it)
+      moveDir = normalize({
+        x: moveDir.x * 0.7 + (-melonDir.x) * 0.3,
+        y: moveDir.y * 0.7 + (-melonDir.y) * 0.3,
+      });
+    }
+
     // Center drift
     if (d > config.approachDist * 2) {
       const centerDir = vecToCenter(ai.pos);
@@ -861,6 +1053,10 @@ function evaluateExpert(
   const streakAccuracyMod = aiState.isHotStreak ? 0.02 : -0.05;
   const effectiveAccuracy = Math.min(1, config.slapAccuracy + streakAccuracyMod);
 
+  // Melon awareness (computed once)
+  const melonThreat = findNearestThreat(ai, state, config);
+  const nearbyMelon = findNearestMelonToAi(ai, state, config.melonProximityFear);
+
   // Priority 1: Edge flee toward center
   if (selfEdge.min < effectiveEdgeFear) {
     moveDir = vecToCenter(ai.pos);
@@ -871,6 +1067,48 @@ function evaluateExpert(
       x: moveDir.x * (1 - lateralMix) + strafeDir.x * edgeDodgeSign * lateralMix,
       y: moveDir.y * (1 - lateralMix) + strafeDir.y * edgeDodgeSign * lateralMix,
     });
+    // Expert edge awareness: also flee from melons near edge (killzone)
+    if (nearbyMelon && nearbyMelon.dist < MELON_EXPLODE_RADIUS) {
+      const awayFromMelon = getMelonDodgeDir(ai, nearbyMelon.melon);
+      moveDir = normalize({
+        x: moveDir.x * 0.5 + awayFromMelon.x * 0.5,
+        y: moveDir.y * 0.5 + awayFromMelon.y * 0.5,
+      });
+    }
+  }
+  // Priority 1b: Dodge incoming fast melon (pre-dodge with high reliability)
+  else if (melonThreat && melonThreat.isIncoming && melonThreat.dist < 6 && Math.random() < config.melonDodgeChance) {
+    moveDir = getMelonDodgeDir(ai, melonThreat.melon);
+    // Expert: counter-slap the melon as it passes (redirect it)
+    if (melonThreat.dist < PLAYER_RADIUS + HAND_RADIUS + 1.2 && hasIdleHand(ai) && Math.random() < config.melonSlapBackChance) {
+      const hand = pickAlternateHand(ai);
+      slapLeft = hand.slapLeft;
+      slapRight = hand.slapRight;
+    }
+  }
+  // Priority 1c: Detonate opponent's melon when they're in the blast radius
+  else if (!isMisread && shouldDetonateOpponentMelon(ai, opponent, state) && bothHandsIdle(ai)) {
+    slapLeft = true;
+    slapRight = true;
+  }
+  // Priority 1d: Flee melon when opponent can detonate (especially near edges)
+  else if (nearbyMelon && shouldFleeFromMelon(ai, opponent, nearbyMelon.melon, config)) {
+    const awayFromMelon = getMelonDodgeDir(ai, nearbyMelon.melon);
+    const centerDir = vecToCenter(ai.pos);
+    // Expert: bias toward center more strongly when near edge
+    const edgeMix = selfEdge.min < 2.0 ? 0.6 : 0.3;
+    moveDir = normalize({
+      x: awayFromMelon.x * (1 - edgeMix) + centerDir.x * edgeMix,
+      y: awayFromMelon.y * (1 - edgeMix) + centerDir.y * edgeMix,
+    });
+  }
+  // Priority 1e: Slap nearby opponent melon toward them
+  else if (melonThreat && shouldSlapAtMelon(ai, melonThreat.melon, config)) {
+    // Expert: aim slap toward opponent position
+    moveDir = normalize({ x: melonThreat.melon.pos.x - ai.pos.x, y: melonThreat.melon.pos.y - ai.pos.y });
+    const hand = adaptiveHandChoice(ai, aiState, config);
+    slapLeft = hand.slapLeft;
+    slapRight = hand.slapRight;
   }
   // Priority 2: Anti-rush — counter opponent spam aggression
   else if (isOpponentRushing(ai, opponent, aiState.adaptation, config.slapRange)) {
@@ -1062,6 +1300,17 @@ function evaluateExpert(
       } else {
         moveDir = herdDir;
       }
+    }
+
+    // Melon herding: push opponent toward nearest melon on field
+    const herdMelon = findMelonForHerding(opponent, state);
+    if (herdMelon && d > config.approachDist) {
+      const melonDir = normalize({ x: herdMelon.pos.x - opponent.pos.x, y: herdMelon.pos.y - opponent.pos.y });
+      // Approach from side opposite to melon (push opponent toward it)
+      moveDir = normalize({
+        x: moveDir.x * 0.6 + (-melonDir.x) * 0.4,
+        y: moveDir.y * 0.6 + (-melonDir.y) * 0.4,
+      });
     }
 
     // Center control: when not engaging, drift toward center

@@ -78,6 +78,11 @@ export interface AIDifficultyConfig {
   slapInterval: [number, number]; // [min, max] seconds for timer slap
   misreadChance: number;         // Expert: probability of intentional misread
   r3ReactionPenalty: number;     // added reaction delay in deciding round
+  // Melon awareness
+  melonDodgeChance: number;      // prob of dodging incoming fast melon (0-1)
+  melonAwarenessRadius: number;  // how far AI "sees" melons (0 = blind)
+  melonSlapBackChance: number;   // prob of slapping opponent melon when nearby (0-1)
+  melonProximityFear: number;    // flee distance from melons when opponent can detonate (0 = none)
 }
 
 export const AI_CONFIGS: Record<AIDifficulty, AIDifficultyConfig> = {
@@ -111,6 +116,10 @@ export const AI_CONFIGS: Record<AIDifficulty, AIDifficultyConfig> = {
     slapInterval: [1.5, 2.5],
     misreadChance: 0,
     r3ReactionPenalty: 0,
+    melonDodgeChance: 0,
+    melonAwarenessRadius: 0,
+    melonSlapBackChance: 0,
+    melonProximityFear: 0,
   },
   medium: {
     decisionInterval: 0.2,
@@ -142,6 +151,10 @@ export const AI_CONFIGS: Record<AIDifficulty, AIDifficultyConfig> = {
     slapInterval: [1.0, 2.0],
     misreadChance: 0,
     r3ReactionPenalty: 0,
+    melonDodgeChance: 0.3,
+    melonAwarenessRadius: 4,
+    melonSlapBackChance: 0.15,
+    melonProximityFear: 1.5,
   },
   hard: {
     decisionInterval: 0.1,
@@ -173,6 +186,10 @@ export const AI_CONFIGS: Record<AIDifficulty, AIDifficultyConfig> = {
     slapInterval: [1.0, 2.0],
     misreadChance: 0,
     r3ReactionPenalty: 0,
+    melonDodgeChance: 0.7,
+    melonAwarenessRadius: 8,
+    melonSlapBackChance: 0.5,
+    melonProximityFear: 2.0,
   },
   expert: {
     decisionInterval: 0.07,
@@ -204,6 +221,10 @@ export const AI_CONFIGS: Record<AIDifficulty, AIDifficultyConfig> = {
     slapInterval: [1.0, 2.0],
     misreadChance: 0.15,
     r3ReactionPenalty: 0.03,
+    melonDodgeChance: 0.9,
+    melonAwarenessRadius: 12,
+    melonSlapBackChance: 0.8,
+    melonProximityFear: 2.5,
   },
 };
 
