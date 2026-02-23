@@ -10,6 +10,12 @@ export interface AdaptationData {
   lastOpponentPos: Vec2;
   totalSlapsSeen: number;
   observationTime: number;
+  // Expert-level tracking
+  opponentSlapPatterns: { leftFirst: number; rightFirst: number };
+  postKnockbackDir: Vec2;         // where opponent DIs after being hit
+  edgePanicBehavior: 'retreat' | 'dodge' | 'attack' | null;
+  approachAngleBias: number;      // weighted avg of opponent approach angle
+  lastOpponentKBMag: number;      // to detect knockback recovery start
 }
 
 export interface AIState {
@@ -26,7 +32,7 @@ export interface AIState {
   gameTime: number;
   tellPauseTimer: number;
   wasInSlapRange: boolean;            // for one-time tell pause on entering range
-  adaptation: AdaptationData | null;  // only used for Hard
+  adaptation: AdaptationData | null;  // used for Hard and Expert
 }
 
 // --- Difficulty Config ---
@@ -114,6 +120,26 @@ export const AI_CONFIGS: Record<AIDifficulty, AIDifficultyConfig> = {
     dodgeProbability: 0.6,
     maxConsecutiveSlaps: 8,
     tellFactor: 0.1,
+  },
+  expert: {
+    decisionInterval: 0.05,
+    reactionDelay: 0.02,
+    moveJitterDeg: 1,
+    jitterChangeInterval: 0.3,
+    slapRange: 1.72,
+    slapAccuracy: 0.98,
+    slapCooldown: 0.05,
+    edgeFearDist: 2.0,
+    approachDist: 1.2,
+    abilityUseChance: 0.95,
+    melonDoubleSlap: 'strategic',
+    melonDetonateChance: 1.0,
+    hesitationChance: 0,
+    hesitationDuration: 0,
+    aggressionBias: 0.8,
+    dodgeProbability: 0.85,
+    maxConsecutiveSlaps: 12,
+    tellFactor: 0,
   },
 };
 

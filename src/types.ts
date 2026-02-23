@@ -3,7 +3,7 @@ export interface Vec2 {
   y: number;
 }
 
-export type AIDifficulty = 'easy' | 'medium' | 'hard';
+export type AIDifficulty = 'easy' | 'medium' | 'hard' | 'expert';
 export type GameMode = 'local' | 'ai';
 export type ControlScheme = { type: 'kb1' } | { type: 'kb2' } | { type: 'gamepad'; index: number };
 

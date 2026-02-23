@@ -8,6 +8,7 @@ const DIFFICULTY_ITEMS: { key: AIDifficulty; label: string; border: string }[] =
   { key: 'easy', label: 'Easy', border: '#33cc33' },
   { key: 'medium', label: 'Medium', border: '#4488ff' },
   { key: 'hard', label: 'Hard', border: '#ff4444' },
+  { key: 'expert', label: 'Expert', border: '#aa44ff' },
 ];
 
 interface DifficultyButton {

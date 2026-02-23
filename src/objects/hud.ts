@@ -168,7 +168,7 @@ export function createHud(scene: Scene): HudElements {
 
 const HUD_FADE_SPEED = 4; // full opacity in 0.25s
 
-export function updateHud(hud: HudElements, state: GameState, dt: number): void {
+export function updateHud(hud: HudElements, state: GameState, dt: number, isAI = false): void {
   // Fade base HUD elements
   if (hud.fadeAlpha < 1) {
     hud.fadeAlpha = Math.min(1, hud.fadeAlpha + dt * HUD_FADE_SPEED);
@@ -183,20 +183,20 @@ export function updateHud(hud: HudElements, state: GameState, dt: number): void 
   const winVisible = state.winner !== null;
   if (state.winner !== null) {
     const setWon = state.scores[state.winner] >= state.roundsToWin;
-    const pNum = state.winner + 1;
+    const name = isAI && state.winner === 1 ? 'AI' : `Player ${state.winner + 1}`;
     const color = state.winner === 0 ? P1_HUD_COLOR : P2_HUD_COLOR;
 
     if (setWon) {
-      hud.winText.text = `Player ${pNum} wins the set!`;
+      hud.winText.text = `${name} wins the set!`;
       hud.restartText.text = 'Press SPACE for new set';
     } else {
-      hud.winText.text = `Player ${pNum} wins the round!`;
+      hud.winText.text = `${name} wins the round!`;
       hud.restartText.text = 'Press SPACE for next round';
     }
     hud.winText.color = color;
     hud.winText.isVisible = true;
     hud.restartText.isVisible = true;
-    hud.scoreText.text = `P1 ${state.scores[0]} - ${state.scores[1]} P2`;
+    hud.scoreText.text = `P1 ${state.scores[0]} - ${state.scores[1]} ${isAI ? 'AI' : 'P2'}`;
     hud.scoreText.isVisible = true;
   } else {
     hud.winText.isVisible = false;
@@ -236,9 +236,9 @@ export function updateHud(hud: HudElements, state: GameState, dt: number): void 
   }
 }
 
-export function setHudVisible(hud: HudElements, visible: boolean): void {
+export function setHudVisible(hud: HudElements, visible: boolean, isAI = false): void {
   hud.p1Label.isVisible = visible;
-  hud.p2Label.isVisible = visible;
+  hud.p2Label.isVisible = visible && !isAI;
   hud.p1Cooldown.isVisible = visible;
   hud.p2Cooldown.isVisible = visible;
   hud.controlsText.isVisible = visible;

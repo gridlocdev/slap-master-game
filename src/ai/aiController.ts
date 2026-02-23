@@ -97,7 +97,16 @@ function createEmptyAdaptation(): AdaptationData {
     lastOpponentPos: { x: 0, y: 0 },
     totalSlapsSeen: 0,
     observationTime: 0,
+    opponentSlapPatterns: { leftFirst: 0, rightFirst: 0 },
+    postKnockbackDir: { x: 0, y: 0 },
+    edgePanicBehavior: null,
+    approachAngleBias: 0,
+    lastOpponentKBMag: 0,
   };
+}
+
+function isHighDifficulty(difficulty: AIDifficulty): boolean {
+  return difficulty === 'hard' || difficulty === 'expert';
 }
 
 export function createAIState(existingAdaptation?: AdaptationData | null): AIState {
@@ -121,7 +130,7 @@ export function createAIState(existingAdaptation?: AdaptationData | null): AISta
 
 // --- Adaptation (Hard only) ---
 
-function updateAdaptation(adapt: AdaptationData, opponent: PlayerState, dt: number): void {
+function updateAdaptation(adapt: AdaptationData, opponent: PlayerState, ai: PlayerState, dt: number): void {
   adapt.observationTime += dt;
 
   // Track opponent movement direction as retreat bias
@@ -133,8 +142,6 @@ function updateAdaptation(adapt: AdaptationData, opponent: PlayerState, dt: numb
     adapt.retreatBias.x = adapt.retreatBias.x * (1 - weight) + (dx / moveMag) * weight;
     adapt.retreatBias.y = adapt.retreatBias.y * (1 - weight) + (dy / moveMag) * weight;
 
-    // Track dodge direction preference
-    // Positive rightward component relative to arena = 'right'
     if (Math.abs(dx) > Math.abs(dy)) {
       adapt.sampleCount++;
       if (adapt.sampleCount > 20) {
@@ -150,6 +157,47 @@ function updateAdaptation(adapt: AdaptationData, opponent: PlayerState, dt: numb
   }
   if (adapt.observationTime > 0.5) {
     adapt.slapFrequency = adapt.totalSlapsSeen / adapt.observationTime;
+  }
+
+  // Expert: track which hand opponent leads with
+  const leftWinding = opponent.hands[0].state === 'windup';
+  const rightWinding = opponent.hands[1].state === 'windup';
+  const leftIdle = opponent.hands[0].state === 'idle';
+  const rightIdle = opponent.hands[1].state === 'idle';
+  if (leftWinding && rightIdle) adapt.opponentSlapPatterns.leftFirst++;
+  if (rightWinding && leftIdle) adapt.opponentSlapPatterns.rightFirst++;
+
+  // Expert: track post-knockback direction (where opponent DIs after being hit)
+  const kbMag = Math.sqrt(opponent.knockbackVel.x ** 2 + opponent.knockbackVel.y ** 2);
+  if (adapt.lastOpponentKBMag > 1 && kbMag < 0.5 && moveMag > 0.01) {
+    // Opponent just recovered from knockback — record their DI
+    const w = 0.1;
+    adapt.postKnockbackDir.x = adapt.postKnockbackDir.x * (1 - w) + (dx / moveMag) * w;
+    adapt.postKnockbackDir.y = adapt.postKnockbackDir.y * (1 - w) + (dy / moveMag) * w;
+  }
+  adapt.lastOpponentKBMag = kbMag;
+
+  // Expert: track edge panic behavior
+  const oppEdge = edgeDistances(opponent.pos).min;
+  if (oppEdge < 1.5 && moveMag > 0.01) {
+    const centerDir = vecToCenter(opponent.pos);
+    const towardCenter = dx * centerDir.x + dy * centerDir.y;
+    if (towardCenter > 0.5) {
+      adapt.edgePanicBehavior = 'retreat';
+    } else if (isSlapping) {
+      adapt.edgePanicBehavior = 'attack';
+    } else {
+      adapt.edgePanicBehavior = 'dodge';
+    }
+  }
+
+  // Expert: track approach angle bias
+  const toAi = Math.atan2(ai.pos.y - opponent.pos.y, ai.pos.x - opponent.pos.x);
+  const moveAngle = Math.atan2(dy, dx);
+  const angleDiff = moveAngle - toAi;
+  if (moveMag > 0.01) {
+    const aw = 0.03;
+    adapt.approachAngleBias = adapt.approachAngleBias * (1 - aw) + angleDiff * aw;
   }
 
   adapt.lastOpponentPos = { x: opponent.pos.x, y: opponent.pos.y };
@@ -172,9 +220,21 @@ function shouldUseBurrito(
   if (difficulty === 'medium') {
     return d >= 2 && d <= 4;
   }
-  // Hard: dash to push toward edge, or dash to escape edge
+
   const oppEdge = edgeDistances(opponent.pos).min;
   const selfEdge = edgeDistances(ai.pos).min;
+
+  // Expert: dash-punch combo — only dash when opponent near edge and AI is
+  // between them and center, or to escape a corner
+  if (difficulty === 'expert') {
+    if (selfEdge < 1.0) return true; // escape corner
+    // Only dash when opponent is near edge and AI can push them further out
+    const aiDistToCenter = Math.sqrt(ai.pos.x ** 2 + ai.pos.y ** 2);
+    const oppDistToCenter = Math.sqrt(opponent.pos.x ** 2 + opponent.pos.y ** 2);
+    return d >= 1.2 && d <= dashRange && oppEdge < 2.0 && aiDistToCenter < oppDistToCenter;
+  }
+
+  // Hard: dash to push toward edge, or dash to escape edge
   if (selfEdge < 1.0) return true; // escape
   return d >= 1.5 && d <= dashRange && oppEdge < 3;
 }
@@ -189,8 +249,15 @@ function shouldUseMelon(
 
   if (difficulty === 'easy') return d > 1.5;
   if (difficulty === 'medium') return d >= 3 && d <= 6;
-  // Hard: throw when opponent has limited escape routes
+
+  // Expert: throw melon to cut off retreat toward center
+  // More liberal with throws — any time opponent is near edge or at mid-range
   const oppEdge = edgeDistances(opponent.pos).min;
+  if (difficulty === 'expert') {
+    return d >= 1.5 && (oppEdge < 3 || d >= 3);
+  }
+
+  // Hard: throw when opponent has limited escape routes
   return d >= 2 && oppEdge < 3;
 }
 
@@ -198,8 +265,8 @@ function shouldUseChild(
   ai: PlayerState, config: AIDifficultyConfig, difficulty: AIDifficulty,
 ): boolean {
   if (ai.ability !== 'child' || ai.abilityCooldown > 0 || ai.tauntTimer > 0) return false;
-  // Hard never taunts (waste of frames)
-  if (difficulty === 'hard') return false;
+  // Hard/Expert never taunts (waste of frames)
+  if (isHighDifficulty(difficulty)) return false;
   if (Math.random() > config.abilityUseChance) return false;
   return true;
 }
@@ -264,9 +331,26 @@ function evaluateDecision(
   }
   // --- Priority 2: Dodge incoming attack ---
   else if (opponentWindingUp(opponent) && Math.random() < config.dodgeProbability) {
-    // Sidestep perpendicular to facing
-    const dodgeSign = (difficulty === 'hard' && aiState.adaptation?.preferredDodgeDir === 'right') ? -1 : 1;
+    // Sidestep perpendicular to facing; high difficulties dodge based on adaptation
+    let dodgeSign = 1;
+    if (isHighDifficulty(difficulty) && aiState.adaptation?.preferredDodgeDir) {
+      dodgeSign = aiState.adaptation.preferredDodgeDir === 'right' ? -1 : 1;
+    }
+    // Expert: predict which hand and dodge to the correct side
+    if (difficulty === 'expert' && aiState.adaptation) {
+      const pat = aiState.adaptation.opponentSlapPatterns;
+      if (pat.leftFirst + pat.rightFirst > 5) {
+        dodgeSign = pat.leftFirst > pat.rightFirst ? -1 : 1;
+      }
+    }
     moveDir = { x: strafeDir.x * dodgeSign, y: strafeDir.y * dodgeSign };
+    // Expert: queue counter-slap after dodge (opponent will be in recovery soon)
+    if (difficulty === 'expert' && hasIdleHand(ai)) {
+      wantSlap = true;
+      const hand = pickSlapHand(ai);
+      slapLeft = hand.slapLeft;
+      slapRight = hand.slapRight;
+    }
   }
   // --- Priority 3: Hesitation (Easy/Medium) ---
   else if (aiState.hesitationTimer > 0) {
@@ -322,15 +406,45 @@ function evaluateDecision(
       moveDir = strafeDir;
     }
 
-    // Hard mode: angle approach to push opponent toward edge
-    if (difficulty === 'hard') {
+    // Hard/Expert: angle approach to push opponent toward edge
+    if (isHighDifficulty(difficulty)) {
       const oppEdge = edgeDistances(opponent.pos);
-      if (oppEdge.min < 2.5 && d > config.approachDist) {
+      const herdThreshold = difficulty === 'expert' ? 3.5 : 2.5;
+      if (oppEdge.min < herdThreshold && d > config.approachDist) {
         // Approach from center side to herd toward edge
         const centerToOpp = normalize({ x: opponent.pos.x, y: opponent.pos.y });
+        const herdStrength = difficulty === 'expert' ? 0.6 : 0.4;
+        let herdDir = normalize({
+          x: toOpponent.x * (1 - herdStrength) + centerToOpp.x * herdStrength,
+          y: toOpponent.y * (1 - herdStrength) + centerToOpp.y * herdStrength,
+        });
+        // Expert: use retreat bias to approach from direction opponent won't escape toward
+        if (difficulty === 'expert' && aiState.adaptation) {
+          const rb = aiState.adaptation.retreatBias;
+          const rbMag = Math.sqrt(rb.x ** 2 + rb.y ** 2);
+          if (rbMag > 0.1) {
+            herdDir = normalize({
+              x: herdDir.x - rb.x * 0.3,
+              y: herdDir.y - rb.y * 0.3,
+            });
+          }
+        }
+        moveDir = herdDir;
+      }
+      // Expert: when opponent near edge, max aggression — close in to spam slaps
+      if (difficulty === 'expert' && oppEdge.min < 1.5) {
+        moveDir = toOpponent;
+      }
+    }
+
+    // Expert: center control — when not engaging, return to center
+    if (difficulty === 'expert') {
+      const aiDistToCenter = Math.sqrt(ai.pos.x ** 2 + ai.pos.y ** 2);
+      if (aiDistToCenter > 2 && d > config.slapRange * 1.5) {
+        const centerDir = vecToCenter(ai.pos);
         moveDir = normalize({
-          x: toOpponent.x * 0.6 + centerToOpp.x * 0.4,
-          y: toOpponent.y * 0.6 + centerToOpp.y * 0.4,
+          x: moveDir.x * 0.4 + centerDir.x * 0.6,
+          y: moveDir.y * 0.4 + centerDir.y * 0.6,
         });
       }
     }
@@ -347,7 +461,16 @@ function evaluateDecision(
 
   // Child hit-and-run: if just slapped and child, back off
   if (ai.ability === 'child' && wantSlap && difficulty !== 'easy') {
-    moveDir = { x: -toOpponent.x, y: -toOpponent.y };
+    // Expert: retreat toward center after slap for optimal repositioning
+    if (difficulty === 'expert') {
+      const centerDir = vecToCenter(ai.pos);
+      moveDir = normalize({
+        x: -toOpponent.x * 0.5 + centerDir.x * 0.5,
+        y: -toOpponent.y * 0.5 + centerDir.y * 0.5,
+      });
+    } else {
+      moveDir = { x: -toOpponent.x, y: -toOpponent.y };
+    }
   }
 
   // Force consecutive slap pause
@@ -396,10 +519,10 @@ export function updateAI(
     aiState.jitterTimer = config.jitterChangeInterval;
   }
 
-  // Update adaptation (Hard only)
-  if (difficulty === 'hard') {
+  // Update adaptation (Hard and Expert)
+  if (isHighDifficulty(difficulty)) {
     if (!aiState.adaptation) aiState.adaptation = createEmptyAdaptation();
-    updateAdaptation(aiState.adaptation, opponent, dt);
+    updateAdaptation(aiState.adaptation, opponent, ai, dt);
   }
 
   // Decision tick

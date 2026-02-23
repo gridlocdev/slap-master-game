@@ -278,7 +278,7 @@ engine.runRenderLoop(() => {
         destroyCountdown(countdownUI);
         countdownUI = null;
         gamePhase = 'playing';
-        setHudVisible(hud, true);
+        setHudVisible(hud, true, gameMode === 'ai');
       }
 
       // Read input (same as playing phase)
@@ -377,7 +377,7 @@ engine.runRenderLoop(() => {
 
       updatePlayerMeshes(playerMeshes[0], state.players[0], 0, dt);
       updatePlayerMeshes(playerMeshes[1], state.players[1], 1, dt);
-      updateHud(hud, state, dt);
+      updateHud(hud, state, dt, gameMode === 'ai');
       updateEffects(effectsPool, state);
     }
   }
