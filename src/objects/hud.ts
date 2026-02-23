@@ -5,7 +5,7 @@ import {
   HUD_WIN_FONT_SIZE, HUD_RESTART_FONT_SIZE, HUD_SCORE_FONT_SIZE,
   HUD_COOLDOWN_FONT_SIZE, HUD_CONTROLS_FONT_SIZE,
   HUD_TEXT_COLOR, HUD_RESTART_COLOR, HUD_CONTROLS_COLOR,
-  P1_HUD_COLOR, P2_HUD_COLOR,
+  P1_HUD_COLOR, P2_HUD_COLOR, AI_HUD_COLOR,
   HUD_WIN_TOP, HUD_RESTART_TOP, HUD_SCORE_TOP,
   HUD_LABEL_BOTTOM, HUD_COOLDOWN_BOTTOM, HUD_SIDE_MARGIN, HUD_CONTROLS_TOP,
   HUD_OUTLINE_COLOR, HUD_WIN_OUTLINE_WIDTH, HUD_SCORE_OUTLINE_WIDTH,
@@ -184,7 +184,7 @@ export function updateHud(hud: HudElements, state: GameState, dt: number, isAI =
   if (state.winner !== null) {
     const setWon = state.scores[state.winner] >= state.roundsToWin;
     const name = isAI && state.winner === 1 ? 'AI' : `Player ${state.winner + 1}`;
-    const color = state.winner === 0 ? P1_HUD_COLOR : P2_HUD_COLOR;
+    const color = state.winner === 0 ? P1_HUD_COLOR : (isAI ? AI_HUD_COLOR : P2_HUD_COLOR);
 
     if (setWon) {
       hud.winText.text = `${name} wins the set!`;
@@ -241,6 +241,7 @@ export function setHudVisible(hud: HudElements, visible: boolean, isAI = false):
   hud.p2Label.isVisible = visible && !isAI;
   hud.p1Cooldown.isVisible = visible;
   hud.p2Cooldown.isVisible = visible;
+  if (isAI) hud.p2Cooldown.color = AI_HUD_COLOR;
   hud.controlsText.isVisible = visible;
   hud.liveScore.isVisible = visible;
   hud.winText.isVisible = false;
