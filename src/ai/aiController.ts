@@ -86,6 +86,12 @@ function opponentFullyVulnerable(opponent: PlayerState): boolean {
   return opponent.hands.every(h => h.state === 'idle' || h.state === 'recovery');
 }
 
+/** Detect passive opponent: not moving and not attacking */
+function isOpponentPassive(opponent: PlayerState): boolean {
+  const velMag = Math.sqrt(opponent.vel.x ** 2 + opponent.vel.y ** 2);
+  return velMag < 0.3 && bothHandsIdle(opponent);
+}
+
 /** Detect rush-spam: high slap rate + close + actively attacking */
 function isOpponentRushing(ai: PlayerState, opponent: PlayerState, adapt: AdaptationData | null, slapRange: number): boolean {
   if (!adapt || adapt.observationTime < 1.0) return false;
@@ -669,7 +675,19 @@ function evaluateHard(
     const safeDodgeSign = Math.random() < 0.5 ? 1 : -1;
     moveDir = { x: strafeDir.x * safeDodgeSign, y: strafeDir.y * safeDodgeSign };
   }
-  // Priority 5: Micro-spacing at range boundary
+  // Priority 6: Punish passive opponent — close in and attack directly
+  else if (isOpponentPassive(opponent) && d <= config.slapRange * 1.5) {
+    moveDir = toOpponent;
+    if (d <= config.slapRange && hasIdleHand(ai) && aiState.slapCooldownTimer <= 0
+        && aiState.consecutiveSlaps < config.maxConsecutiveSlaps) {
+      if (Math.random() < config.slapAccuracy) {
+        const hand = adaptiveHandChoice(ai, aiState, config);
+        slapLeft = hand.slapLeft;
+        slapRight = hand.slapRight;
+      }
+    }
+  }
+  // Priority 7: Micro-spacing at range boundary
   else if (d > config.slapRange * 0.8 && d < config.slapRange * 1.3) {
     // Oscillate forward/back to bait attacks
     aiState.microSpacePhase += 0.05;
@@ -942,7 +960,19 @@ function evaluateExpert(
     const safeDodgeSign = Math.random() < 0.5 ? 1 : -1;
     moveDir = { x: strafeDir.x * safeDodgeSign, y: strafeDir.y * safeDodgeSign };
   }
-  // Priority 5: Micro-spacing with timing mixups
+  // Priority 6: Punish passive opponent — close in and attack directly
+  else if (isOpponentPassive(opponent) && d <= config.slapRange * 1.5) {
+    moveDir = toOpponent;
+    if (d <= config.slapRange && hasIdleHand(ai) && aiState.slapCooldownTimer <= 0
+        && aiState.consecutiveSlaps < config.maxConsecutiveSlaps) {
+      if (Math.random() < effectiveAccuracy) {
+        const hand = adaptiveHandChoice(ai, aiState, config);
+        slapLeft = hand.slapLeft;
+        slapRight = hand.slapRight;
+      }
+    }
+  }
+  // Priority 7: Micro-spacing with timing mixups
   else if (d > config.slapRange * 0.75 && d < config.slapRange * 1.4) {
     // Oscillate for micro-spacing
     aiState.microSpacePhase += 0.06;
