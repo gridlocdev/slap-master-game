@@ -61,6 +61,8 @@ export interface PlayerState {
   tauntTimer: number;
   lastSlapLeftTime: number;
   lastSlapRightTime: number;
+  doubleSlapActive: boolean;
+  speedMultiplier: number;
 }
 
 export interface ArenaRect {

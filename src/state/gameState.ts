@@ -37,6 +37,8 @@ function createPlayer(x: number, y: number, ability: AbilityType): PlayerState {
     tauntTimer: 0,
     lastSlapLeftTime: 0,
     lastSlapRightTime: 0,
+    doubleSlapActive: false,
+    speedMultiplier: 1,
   };
 }
 

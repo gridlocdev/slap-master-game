@@ -28,11 +28,19 @@ export interface AIState {
   hesitationTimer: number;
   jitterAngle: number;
   jitterTimer: number;
-  wantsDoubleSlap: boolean;
   gameTime: number;
   tellPauseTimer: number;
-  wasInSlapRange: boolean;            // for one-time tell pause on entering range
-  adaptation: AdaptationData | null;  // used for Hard and Expert
+  wasInSlapRange: boolean;
+  adaptation: AdaptationData | null;
+  // New fields
+  doubleSlapTimer: number;
+  preferredHand: 'left' | 'right';
+  strafeSide: 1 | -1;
+  streakTimer: number;
+  isHotStreak: boolean;
+  lastSlapWhiffed: boolean;
+  slapIntervalTimer: number;
+  microSpacePhase: number;
 }
 
 // --- Difficulty Config ---
@@ -58,32 +66,55 @@ export interface AIDifficultyConfig {
   dodgeProbability: number;
   maxConsecutiveSlaps: number;
   tellFactor: number;
+  // New fields
+  handBias: number;              // 0.5=even, 0.6=60% preferred hand
+  strafeBias: number;            // 0=random, 0.65=65% same direction
+  retreatMode: 'any' | 'backward';
+  doubleSlapInterval: number;    // seconds between double slap attempts
+  doubleSlapRangeAcc: number;    // chance of being at correct range
+  scoreSensitivity: number;      // 0-1
+  frustrationOnWhiff: boolean;
+  useTimerSlap: boolean;         // slap on interval not range (Easy)
+  slapInterval: [number, number]; // [min, max] seconds for timer slap
+  misreadChance: number;         // Expert: probability of intentional misread
+  r3ReactionPenalty: number;     // added reaction delay in deciding round
 }
 
 export const AI_CONFIGS: Record<AIDifficulty, AIDifficultyConfig> = {
   easy: {
     decisionInterval: 0.35,
-    reactionDelay: 0.25,
-    moveJitterDeg: 30,
+    reactionDelay: 0.35,
+    moveJitterDeg: 5,
     jitterChangeInterval: 0.5,
-    slapRange: 2.2,
-    slapAccuracy: 0.5,
+    slapRange: 3.0,
+    slapAccuracy: 0.3,
     slapCooldown: 0.6,
-    edgeFearDist: 0.5,
+    edgeFearDist: 0,
     approachDist: 2.0,
-    abilityUseChance: 0.3,
+    abilityUseChance: 0.15,
     melonDoubleSlap: 'never',
     melonDetonateChance: 0,
-    hesitationChance: 0.4,
-    hesitationDuration: 0.8,
-    aggressionBias: 0.2,
-    dodgeProbability: 0.1,
+    hesitationChance: 0,
+    hesitationDuration: 0,
+    aggressionBias: 0.9,
+    dodgeProbability: 0,
     maxConsecutiveSlaps: 2,
     tellFactor: 1.0,
+    handBias: 0.5,
+    strafeBias: 0,
+    retreatMode: 'any',
+    doubleSlapInterval: 17,
+    doubleSlapRangeAcc: 0.2,
+    scoreSensitivity: 0,
+    frustrationOnWhiff: false,
+    useTimerSlap: true,
+    slapInterval: [1.5, 2.5],
+    misreadChance: 0,
+    r3ReactionPenalty: 0,
   },
   medium: {
     decisionInterval: 0.2,
-    reactionDelay: 0.12,
+    reactionDelay: 0.2,
     moveJitterDeg: 15,
     jitterChangeInterval: 0.4,
     slapRange: 1.8,
@@ -100,10 +131,21 @@ export const AI_CONFIGS: Record<AIDifficulty, AIDifficultyConfig> = {
     dodgeProbability: 0.35,
     maxConsecutiveSlaps: 4,
     tellFactor: 0.5,
+    handBias: 0.6,
+    strafeBias: 0.65,
+    retreatMode: 'backward',
+    doubleSlapInterval: 8,
+    doubleSlapRangeAcc: 0.5,
+    scoreSensitivity: 0.3,
+    frustrationOnWhiff: true,
+    useTimerSlap: false,
+    slapInterval: [1.0, 2.0],
+    misreadChance: 0,
+    r3ReactionPenalty: 0,
   },
   hard: {
     decisionInterval: 0.1,
-    reactionDelay: 0.05,
+    reactionDelay: 0.08,
     moveJitterDeg: 5,
     jitterChangeInterval: 0.3,
     slapRange: 1.9,
@@ -120,10 +162,21 @@ export const AI_CONFIGS: Record<AIDifficulty, AIDifficultyConfig> = {
     dodgeProbability: 0.6,
     maxConsecutiveSlaps: 8,
     tellFactor: 0.1,
+    handBias: 0.5,
+    strafeBias: 0,
+    retreatMode: 'any',
+    doubleSlapInterval: 5,
+    doubleSlapRangeAcc: 0.85,
+    scoreSensitivity: 0.7,
+    frustrationOnWhiff: false,
+    useTimerSlap: false,
+    slapInterval: [1.0, 2.0],
+    misreadChance: 0,
+    r3ReactionPenalty: 0,
   },
   expert: {
-    decisionInterval: 0.05,
-    reactionDelay: 0.02,
+    decisionInterval: 0.07,
+    reactionDelay: 0.05,
     moveJitterDeg: 1,
     jitterChangeInterval: 0.3,
     slapRange: 1.72,
@@ -140,6 +193,17 @@ export const AI_CONFIGS: Record<AIDifficulty, AIDifficultyConfig> = {
     dodgeProbability: 0.85,
     maxConsecutiveSlaps: 12,
     tellFactor: 0,
+    handBias: 0.5,
+    strafeBias: 0,
+    retreatMode: 'any',
+    doubleSlapInterval: 3,
+    doubleSlapRangeAcc: 0.95,
+    scoreSensitivity: 1.0,
+    frustrationOnWhiff: false,
+    useTimerSlap: false,
+    slapInterval: [1.0, 2.0],
+    misreadChance: 0.15,
+    r3ReactionPenalty: 0.03,
   },
 };
 

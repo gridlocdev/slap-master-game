@@ -26,6 +26,14 @@ export const WINDUP_ANGLE = Math.PI * 0.8;   // 144° — pulled back behind
 export const SWING_END_ANGLE = -Math.PI * 0.3; // -54° — swung past front
 export const SLAP_REACH = 0.85;
 
+// Clash (same-hand cancel)
+export const CLASH_PUSHBACK = 3;
+
+// Double slap (both hands — slow, powerful)
+export const DOUBLE_SLAP_WINDUP = 0.3;
+export const DOUBLE_SLAP_KB_MULT = 2.5;
+export const DOUBLE_SLAP_WINDUP_ANGLE = Math.PI * 0.95; // ~171° — pulled way back
+
 // Spawn positions (relative to arena center)
 export const P1_SPAWN_X = ARENA_X + ARENA_W * 0.3;
 export const P1_SPAWN_Y = ARENA_Y + ARENA_H * 0.5;
@@ -83,6 +91,7 @@ export const DASH_DURATION = 0.3;
 export const DASH_KNOCKBACK = 5;
 export const STINK_CLOUD_DURATION = 3;
 export const STINK_CLOUD_RADIUS = 1.2;
+export const STINK_CLOUD_SLOW = 0.5;
 export const STINK_CLOUD_COLOR: Color3Tuple = [0.2, 0.8, 0.2];
 export const CHILD_SCALE = 0.7;
 export const CHILD_SPEED_MULT = 2.0;

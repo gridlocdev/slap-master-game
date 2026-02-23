@@ -1,8 +1,8 @@
-import type { GameState, PlayerState, PlayerInput } from '../types.ts';
+import type { GameState, PlayerState, PlayerInput, Vec2, StinkCloud } from '../types.ts';
 import { getHandWorldPos } from './combat.ts';
 import {
   ABILITY_COOLDOWN, DASH_SPEED, DASH_DURATION, DASH_KNOCKBACK,
-  STINK_CLOUD_DURATION,
+  STINK_CLOUD_DURATION, STINK_CLOUD_RADIUS, STINK_CLOUD_SLOW,
   TAUNT_DURATION, TAUNT_COOLDOWN,
   MELON_RADIUS, MELON_SPEED, MELON_INVULN_TIME, MELON_FRICTION,
   MELON_KNOCKBACK, MELON_EXPLODE_RADIUS, MELON_EXPLODE_KB,
@@ -235,4 +235,19 @@ export function updateAbilityCooldowns(player: PlayerState, dt: number): void {
   if (player.tauntTimer > 0) {
     player.tauntTimer -= dt;
   }
+}
+
+export function isInStinkCloud(pos: Vec2, clouds: StinkCloud[]): boolean {
+  for (const cloud of clouds) {
+    const dx = pos.x - cloud.pos.x;
+    const dy = pos.y - cloud.pos.y;
+    if (dx * dx + dy * dy < STINK_CLOUD_RADIUS * STINK_CLOUD_RADIUS) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function applyStinkCloudSlow(player: PlayerState, clouds: StinkCloud[]): void {
+  player.speedMultiplier = isInStinkCloud(player.pos, clouds) ? STINK_CLOUD_SLOW : 1;
 }

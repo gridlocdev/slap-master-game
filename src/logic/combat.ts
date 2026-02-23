@@ -3,6 +3,8 @@ import {
   WINDUP_TIME, ACTIVE_TIME, RECOVERY_TIME,
   HAND_OFFSET, HAND_RADIUS, KNOCKBACK_FORCE, CHILD_KB_MULT,
   IDLE_ANGLE, WINDUP_ANGLE, SWING_END_ANGLE, SLAP_REACH,
+  CLASH_PUSHBACK,
+  DOUBLE_SLAP_WINDUP, DOUBLE_SLAP_KB_MULT, DOUBLE_SLAP_WINDUP_ANGLE,
 } from '../constants.ts';
 
 export function triggerSlap(hand: Hand): void {
@@ -34,6 +36,18 @@ export function updateHandState(hand: Hand, dt: number): void {
 }
 
 export function handleSlapInput(player: PlayerState, input: PlayerInput): void {
+  // Double slap: both buttons simultaneously, both hands idle
+  if (input.slapLeft && input.slapRight) {
+    if (player.hands[0].state === 'idle' && player.hands[1].state === 'idle') {
+      player.hands[0].state = 'windup';
+      player.hands[0].timer = DOUBLE_SLAP_WINDUP;
+      player.hands[1].state = 'windup';
+      player.hands[1].timer = DOUBLE_SLAP_WINDUP;
+      player.doubleSlapActive = true;
+      return;
+    }
+  }
+
   if (input.slapLeft) triggerSlap(player.hands[0]);
   if (input.slapRight) triggerSlap(player.hands[1]);
 }
@@ -45,14 +59,17 @@ export function getHandWorldPos(player: PlayerState, hand: Hand): { x: number; y
   let angle: number;
   let reach = HAND_OFFSET;
 
+  const isDouble = player.doubleSlapActive;
+
   if (hand.state === 'windup') {
-    // Interpolate from idle position back to windup
-    const t = 1 - (hand.timer / WINDUP_TIME);
-    angle = IDLE_ANGLE + (WINDUP_ANGLE - IDLE_ANGLE) * t;
+    const windupTime = isDouble ? DOUBLE_SLAP_WINDUP : WINDUP_TIME;
+    const targetAngle = isDouble ? DOUBLE_SLAP_WINDUP_ANGLE : WINDUP_ANGLE;
+    const t = 1 - (hand.timer / windupTime);
+    angle = IDLE_ANGLE + (targetAngle - IDLE_ANGLE) * t;
   } else if (hand.state === 'active') {
-    // Sweep from windup position across the front
+    const startAngle = isDouble ? DOUBLE_SLAP_WINDUP_ANGLE : WINDUP_ANGLE;
     const t = 1 - (hand.timer / ACTIVE_TIME);
-    angle = WINDUP_ANGLE + (SWING_END_ANGLE - WINDUP_ANGLE) * t;
+    angle = startAngle + (SWING_END_ANGLE - startAngle) * t;
     // Extend reach at the midpoint of the swing for more impact
     const reachT = Math.sin(t * Math.PI);
     reach = HAND_OFFSET + (SLAP_REACH - HAND_OFFSET) * reachT;
@@ -95,7 +112,40 @@ export function applyKnockback(attacker: PlayerState, defender: PlayerState): vo
 
   if (len === 0) return;
 
-  const force = attacker.ability === 'child' ? KNOCKBACK_FORCE * CHILD_KB_MULT : KNOCKBACK_FORCE;
+  let force = attacker.ability === 'child' ? KNOCKBACK_FORCE * CHILD_KB_MULT : KNOCKBACK_FORCE;
+  if (attacker.doubleSlapActive) force *= DOUBLE_SLAP_KB_MULT;
+
   defender.knockbackVel.x += (dx / len) * force;
   defender.knockbackVel.y += (dy / len) * force;
+}
+
+/** Check and resolve same-hand clashes. Returns true if any clash occurred. */
+export function checkAndResolveClashes(p0: PlayerState, p1: PlayerState): boolean {
+  let clashed = false;
+  for (let i = 0; i < 2; i++) {
+    if (p0.hands[i].state === 'active' && p1.hands[i].state === 'active') {
+      p0.hands[i].state = 'recovery';
+      p0.hands[i].timer = RECOVERY_TIME;
+      p1.hands[i].state = 'recovery';
+      p1.hands[i].timer = RECOVERY_TIME;
+      clashed = true;
+    }
+  }
+
+  if (clashed) {
+    // Small symmetric pushback — both players pushed apart equally
+    const dx = p1.pos.x - p0.pos.x;
+    const dy = p1.pos.y - p0.pos.y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len > 0) {
+      const nx = dx / len;
+      const ny = dy / len;
+      p0.knockbackVel.x -= nx * CLASH_PUSHBACK;
+      p0.knockbackVel.y -= ny * CLASH_PUSHBACK;
+      p1.knockbackVel.x += nx * CLASH_PUSHBACK;
+      p1.knockbackVel.y += ny * CLASH_PUSHBACK;
+    }
+  }
+
+  return clashed;
 }

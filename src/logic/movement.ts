@@ -21,7 +21,8 @@ export function applyMovement(player: PlayerState, input: PlayerInput, dt: numbe
   if (input.left) { dx -= rightX; dy -= rightY; }
 
   const len = Math.sqrt(dx * dx + dy * dy);
-  const speed = player.ability === 'child' ? MOVE_SPEED * CHILD_SPEED_MULT : MOVE_SPEED;
+  const baseSpeed = player.ability === 'child' ? MOVE_SPEED * CHILD_SPEED_MULT : MOVE_SPEED;
+  const speed = baseSpeed * player.speedMultiplier;
   if (len > 0) {
     dx = (dx / len) * speed * dt;
     dy = (dy / len) * speed * dt;

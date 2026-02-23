@@ -1,11 +1,12 @@
 import type { GameState, PlayerInput } from './types.ts';
 import { computeHandOffsets } from './state/gameState.ts';
 import { computeFacingAngle, applyMovement, applyVelocity } from './logic/movement.ts';
-import { handleSlapInput, updateHandState, checkSlapHit, applyKnockback } from './logic/combat.ts';
+import { handleSlapInput, updateHandState, checkSlapHit, applyKnockback, checkAndResolveClashes } from './logic/combat.ts';
 import { isOutOfBounds } from './logic/arena.ts';
 import {
   handleAbilityInput, updateDash, updateMelons, checkMelonCollisions,
   checkMelonExplosion, updateStinkClouds, updateJuiceMarks, updateAbilityCooldowns,
+  applyStinkCloudSlow,
 } from './logic/abilities.ts';
 import { FALL_DURATION, FALL_GRAVITY } from './constants.ts';
 
@@ -44,6 +45,10 @@ export function updateGame(state: GameState, p1Input: PlayerInput, p2Input: Play
     for (const hand of player.hands) {
       updateHandState(hand, dt);
     }
+    // Clear doubleSlapActive when both hands return to idle
+    if (player.doubleSlapActive && player.hands[0].state === 'idle' && player.hands[1].state === 'idle') {
+      player.doubleSlapActive = false;
+    }
   }
 
   // Handle slap input
@@ -67,6 +72,11 @@ export function updateGame(state: GameState, p1Input: PlayerInput, p2Input: Play
   updateDash(state.players[0], state, state.players[1], dt);
   updateDash(state.players[1], state, state.players[0], dt);
 
+  // Apply stink cloud slow
+  for (const player of state.players) {
+    applyStinkCloudSlow(player, state.stinkClouds);
+  }
+
   // Apply movement (only for non-falling, non-dashing players)
   for (let i = 0; i < 2; i++) {
     const player = state.players[i];
@@ -80,7 +90,10 @@ export function updateGame(state: GameState, p1Input: PlayerInput, p2Input: Play
   // Separate overlapping players
   separatePlayers(state);
 
-  // Check slap hits
+  // Check clashes first (same-hand cancel) — sends clashed hands to recovery
+  checkAndResolveClashes(state.players[0], state.players[1]);
+
+  // Check slap hits (clashed hands are already in recovery, so naturally skipped)
   if (checkSlapHit(state.players[0], state.players[1])) {
     applyKnockback(state.players[0], state.players[1]);
   }
