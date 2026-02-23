@@ -1,7 +1,7 @@
 import type { Hand, PlayerState, PlayerInput } from '../types.ts';
 import {
   WINDUP_TIME, ACTIVE_TIME, RECOVERY_TIME,
-  HAND_OFFSET, HAND_RADIUS, KNOCKBACK_FORCE, CHILD_KB_MULT,
+  HAND_OFFSET, HAND_RADIUS, KNOCKBACK_FORCE, CHILD_KB_MULT, CHILD_VS_CHILD_KB_MULT,
   IDLE_ANGLE, WINDUP_ANGLE, SWING_END_ANGLE, SLAP_REACH,
   CLASH_PUSHBACK,
   DOUBLE_SLAP_WINDUP, DOUBLE_SLAP_KB_MULT, DOUBLE_SLAP_WINDUP_ANGLE,
@@ -112,7 +112,10 @@ export function applyKnockback(attacker: PlayerState, defender: PlayerState): vo
 
   if (len === 0) return;
 
-  let force = attacker.ability === 'child' ? KNOCKBACK_FORCE * CHILD_KB_MULT : KNOCKBACK_FORCE;
+  let force = KNOCKBACK_FORCE;
+  if (attacker.ability === 'child') {
+    force *= defender.ability === 'child' ? CHILD_VS_CHILD_KB_MULT : CHILD_KB_MULT;
+  }
   if (attacker.doubleSlapActive) force *= DOUBLE_SLAP_KB_MULT;
 
   defender.knockbackVel.x += (dx / len) * force;
