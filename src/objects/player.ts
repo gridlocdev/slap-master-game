@@ -95,18 +95,19 @@ function createQuestionTexture(scene: Scene, tag: string): DynamicTexture {
   return tex;
 }
 
-/** Shared melon material — created once, reused for projectiles */
-let sharedMelonMat: StandardMaterial | null = null;
+/** Shared melon material — one per scene, reused for projectiles */
+const sharedMelonMats = new WeakMap<Scene, StandardMaterial>();
 
 export function getSharedMelonMaterial(scene: Scene): StandardMaterial {
-  if (sharedMelonMat) return sharedMelonMat;
+  const existing = sharedMelonMats.get(scene);
+  if (existing) return existing;
   const mat = new StandardMaterial('sharedMelonMat', scene);
   mat.disableLighting = false;
   const tex = createMelonTexture(scene, 'shared');
   mat.diffuseTexture = tex;
   mat.diffuseColor = Color3.White();
   mat.emissiveColor = new Color3(...MELON_EMISSIVE_COLOR);
-  sharedMelonMat = mat;
+  sharedMelonMats.set(scene, mat);
   return mat;
 }
 

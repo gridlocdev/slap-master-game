@@ -38,6 +38,8 @@ import {
 } from './settings.ts';
 import type { AbilityType, AIDifficulty, GameMode, PlayerInput } from './types.ts';
 import type { Vector3 } from '@babylonjs/core';
+import { createDemoScene, updateDemoScene, destroyDemoScene } from './ui/demoScene.ts';
+import type { DemoScene } from './ui/demoScene.ts';
 
 const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
 const { engine, scene, camera } = createScene(canvas);
@@ -73,6 +75,7 @@ let settingsUI: SettingsMenuUI | null = null;
 let gameMode: GameMode = 'local';
 let aiDifficulty: AIDifficulty = 'medium';
 let aiState: AIState | null = null;
+let demoScene: DemoScene | null = null;
 
 // Enter menu mode
 setHudVisible(hud, false);
@@ -80,6 +83,8 @@ setArenaMeshesVisible(scene, false);
 savedCamera = enterSelectionCamera(camera);
 setPlayerMeshesVisible(playerMeshes[0], false);
 setPlayerMeshesVisible(playerMeshes[1], false);
+demoScene = createDemoScene(engine);
+scene.autoClear = false;
 
 function startGame(p1Ability: AbilityType, p2Ability: AbilityType, scores: [number, number] = [0, 0]): void {
   state = createInitialState(p1Ability, p2Ability, scores);
@@ -167,6 +172,14 @@ function goToSelection(): void {
   setPlayerMeshesVisible(playerMeshes[1], true);
 }
 
+function stopDemo(): void {
+  if (demoScene) {
+    destroyDemoScene(demoScene);
+    demoScene = null;
+    scene.autoClear = true;
+  }
+}
+
 function goToMenu(): void {
   state = createSelectionState();
   gamePhase = 'menu';
@@ -182,6 +195,8 @@ function goToMenu(): void {
   }
   setPlayerMeshesVisible(playerMeshes[0], false);
   setPlayerMeshesVisible(playerMeshes[1], false);
+  demoScene = createDemoScene(engine);
+  scene.autoClear = false;
 }
 
 engine.runRenderLoop(() => {
@@ -212,6 +227,7 @@ engine.runRenderLoop(() => {
         gameMode = 'ai';
         destroyDifficultyMenu(difficultyUI);
         difficultyUI = null;
+        stopDemo();
         gamePhase = 'selecting';
         selectionUI = createSelectionUI(scene, { mode: 'ai' });
         setPlayerMeshesVisible(playerMeshes[0], true);
@@ -223,6 +239,7 @@ engine.runRenderLoop(() => {
         gameMode = 'local';
         destroyMainMenu(mainMenuUI);
         mainMenuUI = null;
+        stopDemo();
         gamePhase = 'selecting';
         selectionUI = createSelectionUI(scene, { mode: 'local' });
         setPlayerMeshesVisible(playerMeshes[0], true);
@@ -380,6 +397,11 @@ engine.runRenderLoop(() => {
       updateHud(hud, state, dt, gameMode === 'ai');
       updateEffects(effectsPool, state);
     }
+  }
+
+  if (demoScene) {
+    updateDemoScene(demoScene, dt);
+    demoScene.scene.render();
   }
 
   clearJustPressed();
