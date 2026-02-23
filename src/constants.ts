@@ -239,3 +239,9 @@ export const INPUT_ASSIGN_LABEL_SIZE = 28;
 export const INPUT_ASSIGN_READY_COLOR = '#4488ff';
 export const INPUT_ASSIGN_GAP = '60px';
 export const INPUT_ASSIGN_STICK_THRESHOLD = 0.5;
+
+// Settings menu
+export const SETTINGS_VOL_STEP = 5;
+export const SETTINGS_DEFAULT_VOL = 80;
+export const SETTINGS_STORAGE_KEY = 'slap-master-settings';
+export const SETTINGS_SLIDER_TRACK_W = 200;

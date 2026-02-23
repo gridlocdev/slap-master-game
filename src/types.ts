@@ -5,6 +5,7 @@ export interface Vec2 {
 
 export type AIDifficulty = 'easy' | 'medium' | 'hard';
 export type GameMode = 'local' | 'ai';
+export type ControlScheme = { type: 'kb1' } | { type: 'kb2' } | { type: 'gamepad'; index: number };
 
 export type HandSide = 'left' | 'right';
 export type HandState = 'idle' | 'windup' | 'active' | 'recovery';

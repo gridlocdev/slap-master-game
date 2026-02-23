@@ -42,6 +42,22 @@ export function isP2Unassigned(): boolean {
   return assignment.p2 === null;
 }
 
+export function getP1Device(): InputDevice | null {
+  return assignment.p1;
+}
+
+export function getP2Device(): InputDevice | null {
+  return assignment.p2;
+}
+
+export function setP1Device(device: InputDevice | null): void {
+  assignment.p1 = device;
+}
+
+export function setP2Device(device: InputDevice | null): void {
+  assignment.p2 = device;
+}
+
 export function isOverlayActive(): boolean {
   return overlayActive;
 }

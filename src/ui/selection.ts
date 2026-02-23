@@ -14,8 +14,9 @@ import { applyAbilityVisual } from '../objects/player.ts';
 import { isKeyJustPressed, isShiftJustPressed, isAnyGamepadSelectJustPressed, isGamepadBJustPressed, isGamepadXJustPressed } from '../input.ts';
 import {
   createInputAssignUI, updateInputAssignUI, destroyInputAssignUI,
-  getP1GamepadIndex, getP2GamepadIndex, isP2Unassigned,
+  isP2Unassigned,
 } from './inputAssign.ts';
+import { getP1KeyMap, getP2KeyMap, getP1PadIndex, getP2PadIndex } from '../settings.ts';
 import type { InputAssignUI } from './inputAssign.ts';
 import {
   KB_ICONS, GP_ICONS,
@@ -535,10 +536,10 @@ export function createSelectionUI(scene: Scene, options: SelectionOptions = { mo
   }
 
   // Set initial visibility based on current input assignment
-  const p1IsGamepad = getP1GamepadIndex() !== null;
+  const p1IsGamepad = getP1PadIndex() !== null;
   p1KbRow.isVisible = !p1IsGamepad;
   p1GpRow.isVisible = p1IsGamepad;
-  const p2IsGamepad = getP2GamepadIndex() !== null;
+  const p2IsGamepad = getP2PadIndex() !== null;
   p2KbRow.isVisible = !p2IsGamepad;
   p2GpRow.isVisible = p2IsGamepad;
 
@@ -779,11 +780,11 @@ export function updateSelection(selUI: SelectionUI, state: GameState): 'ready' |
   }
 
   // Update control hint visibility based on current input assignment
-  const p1Gp = getP1GamepadIndex() !== null;
+  const p1Gp = getP1PadIndex() !== null;
   selUI.p1KbRow.isVisible = !p1Gp;
   selUI.p1GpRow.isVisible = p1Gp;
   if (selUI.mode !== 'ai') {
-    const p2Gp = getP2GamepadIndex() !== null;
+    const p2Gp = getP2PadIndex() !== null;
     selUI.p2KbRow.isVisible = !p2Gp;
     selUI.p2GpRow.isVisible = p2Gp;
   }
@@ -804,8 +805,8 @@ export function updateSelection(selUI: SelectionUI, state: GameState): 'ready' |
   } else {
     // Back to menu: Esc or gamepad B when neither player is confirmed
     if (!selUI.panels[0].confirmed && !selUI.panels[1].confirmed) {
-      const p1Pad = getP1GamepadIndex();
-      const p2Pad = getP2GamepadIndex();
+      const p1Pad = getP1PadIndex();
+      const p2Pad = getP2PadIndex();
       const gamepadBack = (p1Pad !== null && isGamepadBJustPressed(p1Pad))
         || (p2Pad !== null && isGamepadBJustPressed(p2Pad));
       if (isKeyJustPressed('Escape') || gamepadBack) {
@@ -813,13 +814,15 @@ export function updateSelection(selUI: SelectionUI, state: GameState): 'ready' |
       }
     }
 
-    // P1 controls: A/D cycle, C/V confirm, Escape unconfirm
-    handlePlayerSelection(selUI.panels[0], 'KeyA', 'KeyD', 'KeyC', 'KeyV', 'Escape');
-    // P2 controls: K/; cycle, ArrowLeft/ArrowRight confirm, Backspace unconfirm
-    handlePlayerSelection(selUI.panels[1], 'KeyK', 'Semicolon', 'ArrowLeft', 'ArrowRight', 'Backspace');
+    // P1 controls: cycle + confirm from settings-derived key map
+    const p1Keys = getP1KeyMap();
+    if (p1Keys) handlePlayerSelection(selUI.panels[0], p1Keys.left, p1Keys.right, p1Keys.slapLeft, p1Keys.slapRight, 'Escape');
+    // P2 controls: cycle + confirm from settings-derived key map
+    const p2Keys = getP2KeyMap();
+    if (p2Keys) handlePlayerSelection(selUI.panels[1], p2Keys.left, p2Keys.right, p2Keys.slapLeft, p2Keys.slapRight, 'Backspace');
 
-    const p1Pad = getP1GamepadIndex();
-    const p2Pad = getP2GamepadIndex();
+    const p1Pad = getP1PadIndex();
+    const p2Pad = getP2PadIndex();
     const solo = p1Pad !== null && isP2Unassigned();
     if (p1Pad !== null) {
       if (solo && selUI.panels[0].confirmed) {
@@ -900,7 +903,8 @@ export function updateSelection(selUI: SelectionUI, state: GameState): 'ready' |
 function updateSelectionAI(selUI: SelectionUI): 'ready' | 'back' | null {
   const p1Panel = selUI.panels[0];
   const aiPanel = selUI.panels[1];
-  const p1Pad = getP1GamepadIndex();
+  const p1Pad = getP1PadIndex();
+  const p1Keys = getP1KeyMap();
 
   if (!p1Panel.confirmed) {
     // P1 not confirmed → P1 keyboard drives panel 0
@@ -911,15 +915,15 @@ function updateSelectionAI(selUI: SelectionUI): 'ready' | 'back' | null {
         return 'back';
       }
     }
-    handlePlayerSelection(p1Panel, 'KeyA', 'KeyD', 'KeyC', 'KeyV', 'Escape');
+    if (p1Keys) handlePlayerSelection(p1Panel, p1Keys.left, p1Keys.right, p1Keys.slapLeft, p1Keys.slapRight, 'Escape');
     if (p1Pad !== null) handleGamepadSelection(p1Panel, p1Pad);
   } else if (!aiPanel.confirmed) {
     // P1 confirmed, AI not confirmed → P1 keyboard drives panel 1
     // Escape unconfirms P1 (back to P1 panel)
     if (isKeyJustPressed('Escape')) {
       unconfirmPanel(p1Panel);
-    } else {
-      handlePlayerSelection(aiPanel, 'KeyA', 'KeyD', 'KeyC', 'KeyV', 'Escape');
+    } else if (p1Keys) {
+      handlePlayerSelection(aiPanel, p1Keys.left, p1Keys.right, p1Keys.slapLeft, p1Keys.slapRight, 'Escape');
     }
     if (p1Pad !== null) {
       if (isGamepadBJustPressed(p1Pad)) {

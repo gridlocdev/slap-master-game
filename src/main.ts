@@ -26,9 +26,15 @@ import { createControlsMenu, updateControlsMenu, destroyControlsMenu } from './u
 import type { ControlsMenuUI } from './ui/controlsMenu.ts';
 import { createDifficultyMenu, updateDifficultyMenu, destroyDifficultyMenu } from './ui/difficultyMenu.ts';
 import type { DifficultyMenuUI } from './ui/difficultyMenu.ts';
-import { P1_KEYS, P2_KEYS, RESTART_DELAY } from './constants.ts';
-import { initDefaultAssignment, getP1GamepadIndex, getP2GamepadIndex } from './ui/inputAssign.ts';
-import type { AbilityType, AIDifficulty, GameMode } from './types.ts';
+import { createSettingsMenu, updateSettingsMenu, destroySettingsMenu } from './ui/settingsMenu.ts';
+import type { SettingsMenuUI } from './ui/settingsMenu.ts';
+import { RESTART_DELAY } from './constants.ts';
+import { initDefaultAssignment } from './ui/inputAssign.ts';
+import {
+  loadSettings, hasSavedSettings, applySettingsToInputAssign,
+  getP1KeyMap, getP2KeyMap, getP1PadIndex, getP2PadIndex,
+} from './settings.ts';
+import type { AbilityType, AIDifficulty, GameMode, PlayerInput } from './types.ts';
 import type { Vector3 } from '@babylonjs/core';
 
 const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
@@ -44,7 +50,12 @@ const playerMeshes = [
 const hud = createHud(scene);
 const effectsPool = createEffectsPool(scene);
 
-initDefaultAssignment();
+loadSettings();
+if (hasSavedSettings()) {
+  applySettingsToInputAssign();
+} else {
+  initDefaultAssignment();
+}
 let state = createSelectionState();
 let selectionUI: ReturnType<typeof createSelectionUI> | null = null;
 let mainMenuUI: MainMenuUI | null = createMainMenuUI(scene);
@@ -56,6 +67,7 @@ let isPaused = false;
 let pauseMenuUI: PauseMenuUI | null = null;
 let controlsUI: ControlsMenuUI | null = null;
 let difficultyUI: DifficultyMenuUI | null = null;
+let settingsUI: SettingsMenuUI | null = null;
 let gameMode: GameMode = 'local';
 // Stored for future AI gameplay logic
 // @ts-expect-error written but not yet read — used once AI gameplay is implemented
@@ -98,8 +110,8 @@ function startNextRound(): void {
 }
 
 function checkPauseToggle(): boolean {
-  const p1Pad = getP1GamepadIndex();
-  const p2Pad = getP2GamepadIndex();
+  const p1Pad = getP1PadIndex();
+  const p2Pad = getP2PadIndex();
   return isKeyJustPressed('Escape')
     || (p1Pad !== null && isGamepadStartJustPressed(p1Pad))
     || (p2Pad !== null && isGamepadStartJustPressed(p2Pad));
@@ -175,6 +187,13 @@ engine.runRenderLoop(() => {
         destroyControlsMenu(controlsUI);
         controlsUI = null;
       }
+    } else if (settingsUI) {
+      const result = updateSettingsMenu(settingsUI);
+      if (result === 'back') {
+        destroySettingsMenu(settingsUI);
+        settingsUI = null;
+        mainMenuUI = createMainMenuUI(scene);
+      }
     } else if (difficultyUI) {
       const result = updateDifficultyMenu(difficultyUI);
       if (result === 'back') {
@@ -205,6 +224,10 @@ engine.runRenderLoop(() => {
         destroyMainMenu(mainMenuUI);
         mainMenuUI = null;
         difficultyUI = createDifficultyMenu(scene);
+      } else if (action === 'settings') {
+        destroyMainMenu(mainMenuUI);
+        mainMenuUI = null;
+        settingsUI = createSettingsMenu(scene);
       } else if (action === 'controls') {
         controlsUI = createControlsMenu(scene);
       }
@@ -252,10 +275,12 @@ engine.runRenderLoop(() => {
       }
 
       // Read input (same as playing phase)
-      let p1Input = readInput(P1_KEYS);
-      let p2Input = readInput(P2_KEYS);
-      const p1Pad = getP1GamepadIndex();
-      const p2Pad = getP2GamepadIndex();
+      const p1KeyMap = getP1KeyMap();
+      const p2KeyMap = getP2KeyMap();
+      let p1Input: PlayerInput = p1KeyMap ? readInput(p1KeyMap) : { forward: false, back: false, left: false, right: false, slapLeft: false, slapRight: false, ability: false };
+      let p2Input: PlayerInput = p2KeyMap ? readInput(p2KeyMap) : { forward: false, back: false, left: false, right: false, slapLeft: false, slapRight: false, ability: false };
+      const p1Pad = getP1PadIndex();
+      const p2Pad = getP2PadIndex();
       const gp1 = p1Pad !== null ? readGamepadInput(p1Pad) : null;
       const gp2 = p2Pad !== null ? readGamepadInput(p2Pad) : null;
       if (gp1) p1Input = mergeInput(p1Input, gp1);
@@ -294,13 +319,15 @@ engine.runRenderLoop(() => {
         handlePauseAction(updatePauseMenu(pauseMenuUI));
       }
     } else {
-      // Keyboard input
-      let p1Input = readInput(P1_KEYS);
-      let p2Input = readInput(P2_KEYS);
+      // Read input based on control scheme settings
+      const p1KeyMap = getP1KeyMap();
+      const p2KeyMap = getP2KeyMap();
+      let p1Input: PlayerInput = p1KeyMap ? readInput(p1KeyMap) : { forward: false, back: false, left: false, right: false, slapLeft: false, slapRight: false, ability: false };
+      let p2Input: PlayerInput = p2KeyMap ? readInput(p2KeyMap) : { forward: false, back: false, left: false, right: false, slapLeft: false, slapRight: false, ability: false };
 
-      // Merge gamepad input (use assigned pad indices)
-      const p1Pad = getP1GamepadIndex();
-      const p2Pad = getP2GamepadIndex();
+      // Merge gamepad input (use settings-assigned pad indices)
+      const p1Pad = getP1PadIndex();
+      const p2Pad = getP2PadIndex();
       const gp1 = p1Pad !== null ? readGamepadInput(p1Pad) : null;
       const gp2 = p2Pad !== null ? readGamepadInput(p2Pad) : null;
       if (gp1) p1Input = mergeInput(p1Input, gp1);
