@@ -392,10 +392,12 @@ engine.runRenderLoop(() => {
         updateGame(state, p1Input, p2Input, dt);
       }
 
-      updatePlayerMeshes(playerMeshes[0], state.players[0], 0, dt);
-      updatePlayerMeshes(playerMeshes[1], state.players[1], 1, dt);
-      updateHud(hud, state, dt, gameMode === 'ai');
-      updateEffects(effectsPool, state);
+      if (gamePhase === 'playing') {
+        updatePlayerMeshes(playerMeshes[0], state.players[0], 0, dt);
+        updatePlayerMeshes(playerMeshes[1], state.players[1], 1, dt);
+        updateHud(hud, state, dt, gameMode === 'ai');
+        updateEffects(effectsPool, state);
+      }
     }
   }
 
