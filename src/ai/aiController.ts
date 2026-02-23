@@ -81,6 +81,20 @@ function opponentInRecovery(opponent: PlayerState): boolean {
   return opponent.hands[0].state === 'recovery' || opponent.hands[1].state === 'recovery';
 }
 
+/** True when opponent has no hands in windup or active (safe to approach) */
+function opponentFullyVulnerable(opponent: PlayerState): boolean {
+  return opponent.hands.every(h => h.state === 'idle' || h.state === 'recovery');
+}
+
+/** Detect rush-spam: high slap rate + close + actively attacking */
+function isOpponentRushing(ai: PlayerState, opponent: PlayerState, adapt: AdaptationData | null, slapRange: number): boolean {
+  if (!adapt || adapt.observationTime < 1.0) return false;
+  if (adapt.slapFrequency < 2.5) return false;
+  const d = dist(ai.pos, opponent.pos);
+  if (d > slapRange * 1.8) return false;
+  return opponent.hands[0].state !== 'idle' || opponent.hands[1].state !== 'idle';
+}
+
 /** Pick hand based on bias. bias=0.5 is even, bias=0.6 means 60% preferred hand. */
 function pickBiasedSlapHand(ai: PlayerState, preferredHand: 'left' | 'right', bias: number): { slapLeft: boolean; slapRight: boolean } {
   const leftIdle = ai.hands[0].state === 'idle';
@@ -596,31 +610,64 @@ function evaluateHard(
   if (selfEdge.min < effectiveEdgeFear) {
     moveDir = vecToCenter(ai.pos);
   }
-  // Priority 2: Intentional clash — when near edge and opponent attacking, match hand
+  // Priority 2: Anti-rush — counter opponent spam aggression
+  else if (isOpponentRushing(ai, opponent, aiState.adaptation, config.slapRange)) {
+    // Retreat toward center to create space
+    const centerDir = vecToCenter(ai.pos);
+    moveDir = normalize({
+      x: -toOpponent.x * 0.5 + centerDir.x * 0.5,
+      y: -toOpponent.y * 0.5 + centerDir.y * 0.5,
+    });
+    // Ability escape: burrito away (leaves slowing cloud) or melon into rusher
+    if (ai.ability === 'burrito' && ai.abilityCooldown <= 0 && !ai.isDashing) {
+      wantAbility = true;
+      moveDir = { x: -toOpponent.x, y: -toOpponent.y };
+    } else if (ai.ability === 'melon' && ai.abilityCooldown <= 0) {
+      wantAbility = true;
+    }
+    // Mid-field clash: match opponent's hand to halt momentum
+    else if (opponentWindingUp(opponent) && d < config.slapRange * 1.5) {
+      const hand = pickMatchingHand(ai, opponent);
+      slapLeft = hand.slapLeft;
+      slapRight = hand.slapRight;
+    }
+    // Add lateral strafing to retreat
+    const rushDodgeSign = Math.random() < 0.5 ? 1 : -1;
+    moveDir = normalize({
+      x: moveDir.x + strafeDir.x * rushDodgeSign * 0.4,
+      y: moveDir.y + strafeDir.y * rushDodgeSign * 0.4,
+    });
+  }
+  // Priority 3: Intentional clash — when near edge and opponent attacking, match hand
   else if (selfEdge.min < effectiveEdgeFear + 1.0 && opponentWindingUp(opponent) && d < config.slapRange * 1.5) {
-    // Match opponent's hand to force a clash (deny push when in danger)
     const hand = pickMatchingHand(ai, opponent);
     slapLeft = hand.slapLeft;
     slapRight = hand.slapRight;
-    // Strafe while clashing
     const dodgeSign = aiState.adaptation?.preferredDodgeDir === 'right' ? -1 : 1;
     moveDir = { x: strafeDir.x * dodgeSign, y: strafeDir.y * dodgeSign };
   }
-  // Priority 3: Dodge incoming attack (adaptation-based direction)
-  else if (opponentWindingUp(opponent) && Math.random() < config.dodgeProbability) {
+  // Priority 4: Dodge incoming attack — triggers on windup OR active
+  else if ((opponentWindingUp(opponent) || opponentAttacking(opponent)) && Math.random() < config.dodgeProbability) {
     let dodgeSign = Math.random() < 0.5 ? 1 : -1;
     if (aiState.adaptation?.preferredDodgeDir) {
       dodgeSign = aiState.adaptation.preferredDodgeDir === 'right' ? -1 : 1;
     }
     moveDir = { x: strafeDir.x * dodgeSign, y: strafeDir.y * dodgeSign };
   }
-  // Priority 4: Punish opponent recovery (behavior-triggered attack)
-  else if (opponentInRecovery(opponent) && d <= config.slapRange && hasIdleHand(ai)) {
-    // Guaranteed punish during recovery frames
+  // Priority 5: Punish opponent recovery — safe approach only
+  else if (opponentInRecovery(opponent) && d <= config.slapRange && hasIdleHand(ai) && opponentFullyVulnerable(opponent)) {
     const hand = pickAlternateHand(ai);
     slapLeft = hand.slapLeft;
     slapRight = hand.slapRight;
-    moveDir = toOpponent; // close in for the punish
+    moveDir = toOpponent;
+  }
+  // Priority 5b: Recovery but other hand dangerous — slap but strafe instead of approaching
+  else if (opponentInRecovery(opponent) && d <= config.slapRange && hasIdleHand(ai)) {
+    const hand = adaptiveHandChoice(ai, aiState, config);
+    slapLeft = hand.slapLeft;
+    slapRight = hand.slapRight;
+    const safeDodgeSign = Math.random() < 0.5 ? 1 : -1;
+    moveDir = { x: strafeDir.x * safeDodgeSign, y: strafeDir.y * safeDodgeSign };
   }
   // Priority 5: Micro-spacing at range boundary
   else if (d > config.slapRange * 0.8 && d < config.slapRange * 1.3) {
@@ -801,36 +848,67 @@ function evaluateExpert(
     moveDir = vecToCenter(ai.pos);
     // Expert: strafe while retreating for unpredictability
     const lateralMix = 0.3;
-    const dodgeSign = Math.random() < 0.5 ? 1 : -1;
+    const edgeDodgeSign = Math.random() < 0.5 ? 1 : -1;
     moveDir = normalize({
-      x: moveDir.x * (1 - lateralMix) + strafeDir.x * dodgeSign * lateralMix,
-      y: moveDir.y * (1 - lateralMix) + strafeDir.y * dodgeSign * lateralMix,
+      x: moveDir.x * (1 - lateralMix) + strafeDir.x * edgeDodgeSign * lateralMix,
+      y: moveDir.y * (1 - lateralMix) + strafeDir.y * edgeDodgeSign * lateralMix,
     });
   }
-  // Priority 2: Intentional clash when in danger
+  // Priority 2: Anti-rush — counter opponent spam aggression
+  else if (isOpponentRushing(ai, opponent, aiState.adaptation, config.slapRange)) {
+    // Retreat toward center to create space
+    const centerDir = vecToCenter(ai.pos);
+    moveDir = normalize({
+      x: -toOpponent.x * 0.5 + centerDir.x * 0.5,
+      y: -toOpponent.y * 0.5 + centerDir.y * 0.5,
+    });
+    // Ability escape: burrito away (leaves slowing cloud) or melon into rusher
+    if (ai.ability === 'burrito' && ai.abilityCooldown <= 0 && !ai.isDashing) {
+      wantAbility = true;
+      moveDir = { x: -toOpponent.x, y: -toOpponent.y };
+    } else if (ai.ability === 'melon' && ai.abilityCooldown <= 0) {
+      wantAbility = true;
+    }
+    // Mid-field clash with misread chance
+    else if (opponentWindingUp(opponent) && d < config.slapRange * 1.5) {
+      if (!isMisread) {
+        const hand = pickMatchingHand(ai, opponent);
+        slapLeft = hand.slapLeft;
+        slapRight = hand.slapRight;
+      } else {
+        const hand = pickAlternateHand(ai);
+        slapLeft = hand.slapLeft;
+        slapRight = hand.slapRight;
+      }
+    }
+    // Lateral strafing while retreating
+    const rushDodgeSign = Math.random() < 0.5 ? 1 : -1;
+    moveDir = normalize({
+      x: moveDir.x + strafeDir.x * rushDodgeSign * 0.4,
+      y: moveDir.y + strafeDir.y * rushDodgeSign * 0.4,
+    });
+  }
+  // Priority 3: Intentional clash when in danger
   else if (selfEdge.min < effectiveEdgeFear + 1.5 && opponentWindingUp(opponent) && d < config.slapRange * 1.5) {
     if (!isMisread) {
       const hand = pickMatchingHand(ai, opponent);
       slapLeft = hand.slapLeft;
       slapRight = hand.slapRight;
     } else {
-      // Misread: throw wrong hand (opponent's hit lands)
       const hand = pickAlternateHand(ai);
       slapLeft = hand.slapLeft;
       slapRight = hand.slapRight;
     }
-    // Strafe toward center while clashing
     const centerDir = vecToCenter(ai.pos);
     moveDir = normalize({
       x: strafeDir.x * 0.5 + centerDir.x * 0.5,
       y: strafeDir.y * 0.5 + centerDir.y * 0.5,
     });
   }
-  // Priority 3: Dodge (with adaptation-based prediction)
-  else if (opponentWindingUp(opponent) && Math.random() < config.dodgeProbability) {
+  // Priority 4: Dodge — triggers on windup OR active (with adaptation-based prediction)
+  else if ((opponentWindingUp(opponent) || opponentAttacking(opponent)) && Math.random() < config.dodgeProbability) {
     let dodgeSign = 1;
     if (!isMisread && aiState.adaptation) {
-      // Predict opponent's hand and dodge to correct side
       const pat = aiState.adaptation.opponentSlapPatterns;
       if (pat.leftFirst + pat.rightFirst > 5) {
         dodgeSign = pat.leftFirst > pat.rightFirst ? -1 : 1;
@@ -838,7 +916,7 @@ function evaluateExpert(
         dodgeSign = aiState.adaptation.preferredDodgeDir === 'right' ? -1 : 1;
       }
     } else if (isMisread) {
-      dodgeSign = Math.random() < 0.5 ? 1 : -1; // random on misread
+      dodgeSign = Math.random() < 0.5 ? 1 : -1;
     }
     moveDir = { x: strafeDir.x * dodgeSign, y: strafeDir.y * dodgeSign };
 
@@ -849,12 +927,20 @@ function evaluateExpert(
       slapRight = hand.slapRight;
     }
   }
-  // Priority 4: Punish recovery (guaranteed hit)
-  else if (opponentInRecovery(opponent) && d <= config.slapRange && hasIdleHand(ai)) {
+  // Priority 5: Punish recovery — safe approach only
+  else if (opponentInRecovery(opponent) && d <= config.slapRange && hasIdleHand(ai) && opponentFullyVulnerable(opponent)) {
     const hand = adaptiveHandChoice(ai, aiState, config);
     slapLeft = hand.slapLeft;
     slapRight = hand.slapRight;
     moveDir = toOpponent;
+  }
+  // Priority 5b: Recovery but other hand dangerous — counter-slap but strafe
+  else if (opponentInRecovery(opponent) && d <= config.slapRange && hasIdleHand(ai)) {
+    const hand = adaptiveHandChoice(ai, aiState, config);
+    slapLeft = hand.slapLeft;
+    slapRight = hand.slapRight;
+    const safeDodgeSign = Math.random() < 0.5 ? 1 : -1;
+    moveDir = { x: strafeDir.x * safeDodgeSign, y: strafeDir.y * safeDodgeSign };
   }
   // Priority 5: Micro-spacing with timing mixups
   else if (d > config.slapRange * 0.75 && d < config.slapRange * 1.4) {
