@@ -22,6 +22,7 @@ export function updateHandState(hand: Hand, dt: number): void {
       case 'windup':
         hand.state = 'active';
         hand.timer = ACTIVE_TIME;
+        hand.hitConnected = false;
         break;
       case 'active':
         hand.state = 'recovery';
@@ -92,6 +93,7 @@ export function getHandWorldPos(player: PlayerState, hand: Hand): { x: number; y
 export function checkSlapHit(attacker: PlayerState, defender: PlayerState): boolean {
   for (const hand of attacker.hands) {
     if (hand.state !== 'active') continue;
+    if (hand.hitConnected) continue;
 
     const handPos = getHandWorldPos(attacker, hand);
     const dx = handPos.x - defender.pos.x;
@@ -99,18 +101,21 @@ export function checkSlapHit(attacker: PlayerState, defender: PlayerState): bool
     const dist = Math.sqrt(dx * dx + dy * dy);
     const hitDist = HAND_RADIUS + defender.radius;
 
-    if (dist < hitDist) return true;
+    if (dist < hitDist) {
+      hand.hitConnected = true;
+      return true;
+    }
   }
 
   return false;
 }
 
-export function applyKnockback(attacker: PlayerState, defender: PlayerState): void {
+export function applyKnockback(attacker: PlayerState, defender: PlayerState): { dir: { x: number; y: number }; force: number } {
   const dx = defender.pos.x - attacker.pos.x;
   const dy = defender.pos.y - attacker.pos.y;
   const len = Math.sqrt(dx * dx + dy * dy);
 
-  if (len === 0) return;
+  if (len === 0) return { dir: { x: 0, y: 0 }, force: 0 };
 
   let force = KNOCKBACK_FORCE;
   if (attacker.ability === 'child') {
@@ -118,8 +123,12 @@ export function applyKnockback(attacker: PlayerState, defender: PlayerState): vo
   }
   if (attacker.doubleSlapActive) force *= DOUBLE_SLAP_KB_MULT;
 
-  defender.knockbackVel.x += (dx / len) * force;
-  defender.knockbackVel.y += (dy / len) * force;
+  const dirX = dx / len;
+  const dirY = dy / len;
+  defender.knockbackVel.x += dirX * force;
+  defender.knockbackVel.y += dirY * force;
+
+  return { dir: { x: dirX, y: dirY }, force };
 }
 
 /** Check and resolve same-hand clashes. Returns true if any clash occurred. */

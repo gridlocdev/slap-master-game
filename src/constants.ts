@@ -177,6 +177,47 @@ export const EYE_Y_FACTOR = 0.2;
 export const PUPIL_FORWARD_FACTOR = 0.08;
 export const TAUNT_EASING_COEFF = 8;
 
+// Impact effects — hitlag
+export const HITLAG_BASE = 0.07;
+export const HITLAG_FORCE_SCALE = 0.003;
+export const HITLAG_MAX = 0.12;
+export const HITLAG_VIBRATE = 0.015;
+
+// Impact effects — screen shake
+export const SHAKE_DURATION = 0.15;
+export const SHAKE_INTENSITY = 0.25;
+export const SHAKE_DECAY = 0.85;
+
+// Impact effects — impact sparks
+export const IMPACT_COUNT = 10;
+export const IMPACT_SIZE = 0.08;
+export const IMPACT_SPEED = 8;
+export const IMPACT_LIFE = 0.25;
+export const IMPACT_COLOR: Color3Tuple = [1, 1, 0.5];
+export const IMPACT_STRONG_COLOR: Color3Tuple = [1, 0.9, 0.3];
+
+// Impact effects — KO zoom
+export const KO_ZOOM_DURATION = 0.5;
+export const KO_SLOW_MO = 0.15;
+export const KO_ZOOM_AMOUNT = 4;
+export const KO_PREDICT_TIME = 0.3;
+
+// Impact effects — ring-out burst
+export const BURST_COUNT = 16;
+export const BURST_SIZE = 0.12;
+export const BURST_SPEED = 12;
+export const BURST_LIFE = 0.4;
+export const FLASH_DURATION = 0.1;
+export const FLASH_ALPHA = 0.7;
+
+// Impact effects — speed lines
+export const SPEED_LINE_COUNT = 6;
+export const SPEED_LINE_THRESHOLD = 5;
+export const SPEED_LINE_LENGTH = 0.6;
+export const SPEED_LINE_WIDTH = 0.03;
+export const SPEED_LINE_LIFE = 0.12;
+export const SPEED_LINE_COLOR: Color3Tuple = [1, 1, 1];
+
 // Effects pool
 export const MAX_CLOUDS = 8;
 export const MAX_MELONS = 8;

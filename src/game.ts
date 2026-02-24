@@ -8,7 +8,24 @@ import {
   checkMelonExplosion, updateStinkClouds, updateJuiceMarks, updateAbilityCooldowns,
   applyStinkCloudSlow,
 } from './logic/abilities.ts';
-import { FALL_DURATION, FALL_GRAVITY } from './constants.ts';
+import { FALL_DURATION, FALL_GRAVITY, KO_PREDICT_TIME } from './constants.ts';
+
+function emitSlapHit(state: GameState, attackerIdx: number, defenderIdx: number, kb: { dir: { x: number; y: number }; force: number }): void {
+  if (kb.force === 0) return;
+  const defender = state.players[defenderIdx];
+  // Contact point: on defender surface facing attacker
+  const pos = {
+    x: defender.pos.x - kb.dir.x * defender.radius,
+    y: defender.pos.y - kb.dir.y * defender.radius,
+  };
+  // Predict KO: simulate defender position after KO_PREDICT_TIME
+  const simPos = {
+    x: defender.pos.x + defender.knockbackVel.x * KO_PREDICT_TIME,
+    y: defender.pos.y + defender.knockbackVel.y * KO_PREDICT_TIME,
+  };
+  const isKO = isOutOfBounds({ ...defender, pos: simPos }, state.arenaRect);
+  state.hitEvents.push({ pos, dir: kb.dir, force: kb.force, attackerIdx, isKO });
+}
 
 function separatePlayers(state: GameState): void {
   const p0 = state.players[0];
@@ -33,6 +50,7 @@ function separatePlayers(state: GameState): void {
 }
 
 export function updateGame(state: GameState, p1Input: PlayerInput, p2Input: PlayerInput, dt: number): void {
+  state.hitEvents = [];
   const inputs = [p1Input, p2Input] as const;
 
   // Update ability cooldowns
@@ -95,10 +113,12 @@ export function updateGame(state: GameState, p1Input: PlayerInput, p2Input: Play
 
   // Check slap hits (clashed hands are already in recovery, so naturally skipped)
   if (checkSlapHit(state.players[0], state.players[1])) {
-    applyKnockback(state.players[0], state.players[1]);
+    const kb = applyKnockback(state.players[0], state.players[1]);
+    emitSlapHit(state, 0, 1, kb);
   }
   if (checkSlapHit(state.players[1], state.players[0])) {
-    applyKnockback(state.players[1], state.players[0]);
+    const kb = applyKnockback(state.players[1], state.players[0]);
+    emitSlapHit(state, 1, 0, kb);
   }
 
   // Update melons

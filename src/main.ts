@@ -28,7 +28,7 @@ import { createDifficultyMenu, updateDifficultyMenu, destroyDifficultyMenu } fro
 import type { DifficultyMenuUI } from './ui/difficultyMenu.ts';
 import { createSettingsMenu, updateSettingsMenu, destroySettingsMenu } from './ui/settingsMenu.ts';
 import type { SettingsMenuUI } from './ui/settingsMenu.ts';
-import { RESTART_DELAY } from './constants.ts';
+import { RESTART_DELAY, SPEED_LINE_THRESHOLD } from './constants.ts';
 import { initDefaultAssignment } from './ui/inputAssign.ts';
 import { createAIState, updateAI } from './ai/aiController.ts';
 import type { AIState } from './ai/aiConfig.ts';
@@ -40,6 +40,10 @@ import type { AbilityType, AIDifficulty, GameMode, PlayerInput } from './types.t
 import type { Vector3 } from '@babylonjs/core';
 import { createDemoScene, updateDemoScene, destroyDemoScene } from './ui/demoScene.ts';
 import type { DemoScene } from './ui/demoScene.ts';
+import {
+  createImpactFx, updateImpactFx, processHitEvents,
+  triggerRingOut, spawnSpeedLines, applyHitlagVibration, resetImpactFx,
+} from './objects/impactFx.ts';
 
 const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
 const { engine, scene, camera } = createScene(canvas);
@@ -53,6 +57,7 @@ const playerMeshes = [
 
 const hud = createHud(scene);
 const effectsPool = createEffectsPool(scene);
+const impactFx = createImpactFx(scene);
 
 loadSettings();
 if (hasSavedSettings()) {
@@ -100,6 +105,7 @@ function startGame(p1Ability: AbilityType, p2Ability: AbilityType, scores: [numb
   }
   setHudVisible(hud, false);
   setArenaMeshesVisible(scene, true);
+  resetImpactFx(impactFx, camera);
   if (savedCamera) {
     restoreGameplayCamera(camera, savedCamera);
     savedCamera = null;
@@ -119,6 +125,7 @@ function startNextRound(): void {
   gamePhase = 'countdown';
   countdownUI = createCountdownUI(scene);
   setHudVisible(hud, false);
+  resetImpactFx(impactFx, camera);
 }
 
 function checkPauseToggle(): boolean {
@@ -165,6 +172,8 @@ function goToSelection(): void {
   }
   setHudVisible(hud, false);
   setArenaMeshesVisible(scene, false);
+  updateEffects(effectsPool, state);
+  resetImpactFx(impactFx, camera);
   if (!savedCamera) {
     savedCamera = enterSelectionCamera(camera);
   }
@@ -190,6 +199,8 @@ function goToMenu(): void {
   }
   setHudVisible(hud, false);
   setArenaMeshesVisible(scene, false);
+  updateEffects(effectsPool, state);
+  resetImpactFx(impactFx, camera);
   if (!savedCamera) {
     savedCamera = enterSelectionCamera(camera);
   }
@@ -291,6 +302,9 @@ engine.runRenderLoop(() => {
         handlePauseAction(updatePauseMenu(pauseMenuUI));
       }
     } else {
+      const cdFx = updateImpactFx(impactFx, camera, dt);
+      const cdGameDt = cdFx.freeze ? 0 : dt * cdFx.dtScale;
+
       if (countdownUI && updateCountdown(countdownUI, dt)) {
         destroyCountdown(countdownUI);
         countdownUI = null;
@@ -320,11 +334,14 @@ engine.runRenderLoop(() => {
       p1Input.forward = p1Input.back = p1Input.left = p1Input.right = p1Input.ability = false;
       p2Input.forward = p2Input.back = p2Input.left = p2Input.right = p2Input.ability = false;
 
-      // Run game logic (movement, slapping, knockback — everything except abilities)
-      updateGame(state, p1Input, p2Input, dt);
+      if (!cdFx.freeze) {
+        updateGame(state, p1Input, p2Input, cdGameDt);
+        processHitEvents(impactFx, state.hitEvents);
+      }
 
       updatePlayerMeshes(playerMeshes[0], state.players[0], 0, dt);
       updatePlayerMeshes(playerMeshes[1], state.players[1], 1, dt);
+      if (cdFx.freeze) applyHitlagVibration(playerMeshes, impactFx.hitlagTimer);
       updateEffects(effectsPool, state);
     }
 
@@ -349,6 +366,10 @@ engine.runRenderLoop(() => {
         handlePauseAction(updatePauseMenu(pauseMenuUI));
       }
     } else {
+      // Impact effects: hitlag, shake, zoom, particles
+      const fx = updateImpactFx(impactFx, camera, dt);
+      const gameDt = fx.freeze ? 0 : dt * fx.dtScale;
+
       // Read input based on control scheme settings
       const p1KeyMap = getP1KeyMap();
       let p1Input: PlayerInput = p1KeyMap ? readInput(p1KeyMap) : { forward: false, back: false, left: false, right: false, slapLeft: false, slapRight: false, ability: false };
@@ -388,13 +409,34 @@ engine.runRenderLoop(() => {
             startNextRound();
           }
         }
-      } else {
-        updateGame(state, p1Input, p2Input, dt);
+      } else if (!fx.freeze) {
+        // Save pre-update falling state for ring-out detection
+        const wasFalling = [state.players[0].isFalling, state.players[1].isFalling];
+
+        updateGame(state, p1Input, p2Input, gameDt);
+        processHitEvents(impactFx, state.hitEvents);
+
+        // Ring-out detection
+        for (let i = 0; i < 2; i++) {
+          if (state.players[i].isFalling && !wasFalling[i]) {
+            triggerRingOut(impactFx, state.players[i].pos, i);
+          }
+        }
+
+        // Speed lines for fast-moving players
+        for (let i = 0; i < 2; i++) {
+          const kv = state.players[i].knockbackVel;
+          const speed = Math.sqrt(kv.x * kv.x + kv.y * kv.y);
+          if (speed > SPEED_LINE_THRESHOLD) {
+            spawnSpeedLines(impactFx, state.players[i].pos, kv);
+          }
+        }
       }
 
       if (gamePhase === 'playing') {
         updatePlayerMeshes(playerMeshes[0], state.players[0], 0, dt);
         updatePlayerMeshes(playerMeshes[1], state.players[1], 1, dt);
+        if (fx.freeze) applyHitlagVibration(playerMeshes, impactFx.hitlagTimer);
         updateHud(hud, state, dt, gameMode === 'ai');
         updateEffects(effectsPool, state);
       }

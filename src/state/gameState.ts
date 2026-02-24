@@ -12,6 +12,7 @@ function createHand(side: 'left' | 'right'): Hand {
     offset: { x: 0, y: 0 },
     state: 'idle',
     timer: 0,
+    hitConnected: false,
   };
 }
 
@@ -59,6 +60,7 @@ export function createInitialState(
     stinkClouds: [],
     melons: [],
     juiceMarks: [],
+    hitEvents: [],
     phase: 'playing',
     selections: [null, null],
     scores,

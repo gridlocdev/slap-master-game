@@ -15,6 +15,7 @@ export interface Hand {
   offset: Vec2;
   state: HandState;
   timer: number;
+  hitConnected: boolean;
 }
 
 export type AbilityType = 'burrito' | 'child' | 'melon';
@@ -39,6 +40,14 @@ export interface MelonState {
 export interface JuiceMark {
   pos: Vec2;
   timer: number;
+}
+
+export interface HitEvent {
+  pos: Vec2;
+  dir: Vec2;
+  force: number;
+  attackerIdx: number;
+  isKO: boolean;
 }
 
 export interface PlayerState {
@@ -80,6 +89,7 @@ export interface GameState {
   stinkClouds: StinkCloud[];
   melons: MelonState[];
   juiceMarks: JuiceMark[];
+  hitEvents: HitEvent[];
   phase: 'selecting' | 'playing';
   selections: [AbilityType | null, AbilityType | null];
   scores: [number, number];

@@ -1,4 +1,5 @@
 import type { GameState, PlayerState, PlayerInput, Vec2, StinkCloud } from '../types.ts';
+import { isOutOfBounds } from './arena.ts';
 import { getHandWorldPos } from './combat.ts';
 import {
   ABILITY_COOLDOWN, DASH_SPEED, DASH_DURATION, DASH_KNOCKBACK,
@@ -9,7 +10,17 @@ import {
   JUICE_MARK_DURATION, DOUBLE_SLAP_WINDOW,
   HAND_RADIUS, ARENA_X, ARENA_W, ARENA_Y, ARENA_H,
   MELON_SPAWN_OFFSET, MELON_SLAP_FORCE,
+  KO_PREDICT_TIME,
 } from '../constants.ts';
+
+function emitHitEvent(state: GameState, pos: Vec2, dir: Vec2, force: number, attackerIdx: number, defender: PlayerState): void {
+  const simPos = {
+    x: defender.pos.x + defender.knockbackVel.x * KO_PREDICT_TIME,
+    y: defender.pos.y + defender.knockbackVel.y * KO_PREDICT_TIME,
+  };
+  const isKO = isOutOfBounds({ ...defender, pos: simPos }, state.arenaRect);
+  state.hitEvents.push({ pos, dir, force, attackerIdx, isKO });
+}
 
 export function handleAbilityInput(player: PlayerState, input: PlayerInput, state: GameState, playerIdx: number): void {
   if (!input.ability) return;
@@ -60,7 +71,7 @@ export function handleAbilityInput(player: PlayerState, input: PlayerInput, stat
   }
 }
 
-export function updateDash(player: PlayerState, _state: GameState, otherPlayer: PlayerState, dt: number): void {
+export function updateDash(player: PlayerState, state: GameState, otherPlayer: PlayerState, dt: number): void {
   if (!player.isDashing) return;
 
   player.dashTimer -= dt;
@@ -76,8 +87,14 @@ export function updateDash(player: PlayerState, _state: GameState, otherPlayer: 
   const hitDist = player.radius + otherPlayer.radius;
 
   if (dist < hitDist && dist > 0) {
-    otherPlayer.knockbackVel.x += (dx / dist) * DASH_KNOCKBACK;
-    otherPlayer.knockbackVel.y += (dy / dist) * DASH_KNOCKBACK;
+    const dirX = dx / dist;
+    const dirY = dy / dist;
+    otherPlayer.knockbackVel.x += dirX * DASH_KNOCKBACK;
+    otherPlayer.knockbackVel.y += dirY * DASH_KNOCKBACK;
+    const attackerIdx = state.players[0] === player ? 0 : 1;
+    emitHitEvent(state,
+      { x: otherPlayer.pos.x - dirX * otherPlayer.radius, y: otherPlayer.pos.y - dirY * otherPlayer.radius },
+      { x: dirX, y: dirY }, DASH_KNOCKBACK, attackerIdx, otherPlayer);
   }
 
   if (player.dashTimer <= 0) {
@@ -122,7 +139,8 @@ export function checkMelonCollisions(state: GameState): void {
     if (melon.invulnTimer > 0) continue;
 
     // Melon ↔ player collision
-    for (const player of state.players) {
+    for (let pi = 0; pi < state.players.length; pi++) {
+      const player = state.players[pi];
       if (!player.isAlive || player.isFalling) continue;
       const dx = player.pos.x - melon.pos.x;
       const dy = player.pos.y - melon.pos.y;
@@ -130,8 +148,13 @@ export function checkMelonCollisions(state: GameState): void {
       const hitDist = player.radius + melon.radius;
 
       if (dist < hitDist && dist > 0) {
-        player.knockbackVel.x += (dx / dist) * MELON_KNOCKBACK;
-        player.knockbackVel.y += (dy / dist) * MELON_KNOCKBACK;
+        const dirX = dx / dist;
+        const dirY = dy / dist;
+        player.knockbackVel.x += dirX * MELON_KNOCKBACK;
+        player.knockbackVel.y += dirY * MELON_KNOCKBACK;
+        emitHitEvent(state,
+          { x: player.pos.x - dirX * player.radius, y: player.pos.y - dirY * player.radius },
+          { x: dirX, y: dirY }, MELON_KNOCKBACK, melon.owner, player);
       }
     }
 
@@ -181,14 +204,20 @@ export function checkMelonExplosion(state: GameState, playerIdx: number, input: 
 
     if (dist < MELON_EXPLODE_RADIUS) {
       // Explode: apply KB to all players in radius
-      for (const p of state.players) {
+      for (let pi = 0; pi < state.players.length; pi++) {
+        const p = state.players[pi];
         if (!p.isAlive || p.isFalling) continue;
         const pdx = p.pos.x - melon.pos.x;
         const pdy = p.pos.y - melon.pos.y;
         const pdist = Math.sqrt(pdx * pdx + pdy * pdy);
         if (pdist < MELON_EXPLODE_RADIUS && pdist > 0) {
-          p.knockbackVel.x += (pdx / pdist) * MELON_EXPLODE_KB;
-          p.knockbackVel.y += (pdy / pdist) * MELON_EXPLODE_KB;
+          const dirX = pdx / pdist;
+          const dirY = pdy / pdist;
+          p.knockbackVel.x += dirX * MELON_EXPLODE_KB;
+          p.knockbackVel.y += dirY * MELON_EXPLODE_KB;
+          emitHitEvent(state,
+            { x: melon.pos.x, y: melon.pos.y },
+            { x: dirX, y: dirY }, MELON_EXPLODE_KB, playerIdx, p);
         }
       }
 
