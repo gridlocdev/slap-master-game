@@ -9,6 +9,8 @@ interface Settings {
   sfxVolume: number;
   p1Scheme: ControlScheme;
   p2Scheme: ControlScheme;
+  hitlagEnabled: boolean;
+  screenShakeEnabled: boolean;
 }
 
 const defaults: Settings = {
@@ -16,6 +18,8 @@ const defaults: Settings = {
   sfxVolume: SETTINGS_DEFAULT_VOL,
   p1Scheme: { type: 'kb1' },
   p2Scheme: { type: 'kb2' },
+  hitlagEnabled: true,
+  screenShakeEnabled: true,
 };
 
 let settings: Settings = { ...defaults };
@@ -41,6 +45,8 @@ export function loadSettings(): void {
     if (typeof parsed.sfxVolume === 'number') settings.sfxVolume = clampVol(parsed.sfxVolume);
     if (isValidScheme(parsed.p1Scheme)) settings.p1Scheme = parsed.p1Scheme;
     if (isValidScheme(parsed.p2Scheme)) settings.p2Scheme = parsed.p2Scheme;
+    if (typeof parsed.hitlagEnabled === 'boolean') settings.hitlagEnabled = parsed.hitlagEnabled;
+    if (typeof parsed.screenShakeEnabled === 'boolean') settings.screenShakeEnabled = parsed.screenShakeEnabled;
   } catch {
     // parse error — keep defaults
   }
@@ -61,6 +67,16 @@ export function setMusicVolume(v: number): void {
 
 export function setSfxVolume(v: number): void {
   settings.sfxVolume = clampVol(v);
+  saveSettings();
+}
+
+export function setHitlagEnabled(v: boolean): void {
+  settings.hitlagEnabled = v;
+  saveSettings();
+}
+
+export function setScreenShakeEnabled(v: boolean): void {
+  settings.screenShakeEnabled = v;
   saveSettings();
 }
 

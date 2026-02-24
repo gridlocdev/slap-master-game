@@ -6,37 +6,52 @@ import {
   Color3,
   Vector3,
   Mesh,
+  VertexData,
+  VertexBuffer,
 } from '@babylonjs/core';
-import { AdvancedDynamicTexture, Rectangle } from '@babylonjs/gui';
 import type { Vec2, HitEvent } from '../types.ts';
 import {
   HITLAG_BASE, HITLAG_FORCE_SCALE, HITLAG_MAX, HITLAG_VIBRATE,
   SHAKE_DURATION, SHAKE_INTENSITY, SHAKE_DECAY,
-  IMPACT_COUNT, IMPACT_SIZE, IMPACT_SPEED, IMPACT_LIFE,
-  IMPACT_COLOR, IMPACT_STRONG_COLOR,
+  STARBURST_COUNT, STARBURST_SPIKES, STARBURST_SPIKES_STRONG,
+  STARBURST_INNER_R, STARBURST_OUTER_R,
+  STARBURST_LIFE, STARBURST_MAX_SCALE, STARBURST_MAX_SCALE_STRONG,
+  STARBURST_SPIN, STARBURST_TIP_COLOR,
+  STARBURST_CENTER_HUES, STARBURST_VALLEY_HUES,
   KO_ZOOM_DURATION, KO_SLOW_MO, KO_ZOOM_AMOUNT,
   BURST_COUNT, BURST_SIZE, BURST_SPEED, BURST_LIFE,
-  FLASH_DURATION, FLASH_ALPHA,
   SPEED_LINE_COUNT, SPEED_LINE_LENGTH, SPEED_LINE_WIDTH, SPEED_LINE_LIFE,
   SPEED_LINE_COLOR,
   CAMERA_POS, CAMERA_TARGET,
   P1_BODY_COLOR, P2_BODY_COLOR,
   KNOCKBACK_FORCE,
 } from '../constants.ts';
-import type { Color3Tuple } from '../constants.ts';
+import { getSettings } from '../settings.ts';
 
 interface Particle {
   velX: number;
   velY: number;
   velZ: number;
+  rotSpeed: number;
   timer: number;
   lifetime: number;
+}
+
+interface StarburstData {
+  timer: number;
+  lifetime: number;
+  rotSpeed: number;
+  maxScale: number;
 }
 
 interface SpeedLine {
   timer: number;
   lifetime: number;
 }
+
+// Max spikes determines vertex buffer size (use the larger of normal/strong)
+const MAX_SPIKES = STARBURST_SPIKES_STRONG;
+const VERTS_PER_STARBURST = 1 + MAX_SPIKES * 2;
 
 export interface ImpactFxState {
   // Hitlag
@@ -50,18 +65,16 @@ export interface ImpactFxState {
   koTimer: number;
   koDuration: number;
   koActive: boolean;
-  // Impact sparks
-  sparks: Mesh[];
-  sparkMats: StandardMaterial[];
-  sparkData: Particle[];
+  koTargetX: number;
+  koTargetZ: number;
+  // Impact starbursts
+  starbursts: Mesh[];
+  starburstMats: StandardMaterial[];
+  starburstData: StarburstData[];
   // Ring-out burst
   bursts: Mesh[];
   burstMats: StandardMaterial[];
   burstData: Particle[];
-  // Screen flash
-  flashUI: AdvancedDynamicTexture;
-  flashRect: Rectangle;
-  flashTimer: number;
   // Speed lines
   lines: Mesh[];
   lineMats: StandardMaterial[];
@@ -71,21 +84,105 @@ export interface ImpactFxState {
   baseCamTarget: Vector3;
 }
 
+/** Build starburst vertex data with given spike count. Unused spikes collapse to center. */
+function buildStarburstGeometry(
+  spikeCount: number,
+  positions: Float32Array,
+  colors: Float32Array,
+  centerColor: readonly number[],
+  valleyColor: readonly number[],
+  tipColor: readonly number[],
+): void {
+  // Center vertex
+  positions[0] = 0; positions[1] = 0; positions[2] = 0;
+  colors[0] = centerColor[0]; colors[1] = centerColor[1]; colors[2] = centerColor[2]; colors[3] = 1;
+
+  for (let i = 0; i < MAX_SPIKES; i++) {
+    const tipIdx = (i * 2 + 1);
+    const valIdx = (i * 2 + 2);
+    const p3t = tipIdx * 3;
+    const p3v = valIdx * 3;
+    const c4t = tipIdx * 4;
+    const c4v = valIdx * 4;
+
+    if (i < spikeCount) {
+      const tipAngle = (i / spikeCount) * Math.PI * 2;
+      const valAngle = ((i + 0.5) / spikeCount) * Math.PI * 2;
+      const spikeR = STARBURST_OUTER_R * (0.6 + Math.random() * 0.8);
+      const valR = STARBURST_INNER_R * (0.7 + Math.random() * 0.6);
+
+      positions[p3t] = Math.cos(tipAngle) * spikeR;
+      positions[p3t + 1] = Math.sin(tipAngle) * spikeR;
+      positions[p3t + 2] = 0;
+
+      positions[p3v] = Math.cos(valAngle) * valR;
+      positions[p3v + 1] = Math.sin(valAngle) * valR;
+      positions[p3v + 2] = 0;
+
+      // Tip: white
+      colors[c4t] = tipColor[0]; colors[c4t + 1] = tipColor[1];
+      colors[c4t + 2] = tipColor[2]; colors[c4t + 3] = 0.9;
+
+      // Valley: warm midtone
+      colors[c4v] = valleyColor[0]; colors[c4v + 1] = valleyColor[1];
+      colors[c4v + 2] = valleyColor[2]; colors[c4v + 3] = 0.7;
+    } else {
+      // Collapse unused spikes to center
+      positions[p3t] = 0; positions[p3t + 1] = 0; positions[p3t + 2] = 0;
+      positions[p3v] = 0; positions[p3v + 1] = 0; positions[p3v + 2] = 0;
+      colors[c4t] = 0; colors[c4t + 1] = 0; colors[c4t + 2] = 0; colors[c4t + 3] = 0;
+      colors[c4v] = 0; colors[c4v + 1] = 0; colors[c4v + 2] = 0; colors[c4v + 3] = 0;
+    }
+  }
+}
+
 export function createImpactFx(scene: Scene): ImpactFxState {
-  // Impact sparks pool
-  const sparks: Mesh[] = [];
-  const sparkMats: StandardMaterial[] = [];
-  const sparkData: Particle[] = [];
-  for (let i = 0; i < IMPACT_COUNT; i++) {
-    const mesh = MeshBuilder.CreateSphere(`spark_${i}`, { diameter: IMPACT_SIZE, segments: 4 }, scene);
-    const mat = new StandardMaterial(`sparkMat_${i}`, scene);
-    mat.emissiveColor = new Color3(...IMPACT_COLOR);
+  // Starburst pool
+  const starbursts: Mesh[] = [];
+  const starburstMats: StandardMaterial[] = [];
+  const starburstData: StarburstData[] = [];
+
+  for (let i = 0; i < STARBURST_COUNT; i++) {
+    const mesh = new Mesh(`starburst_${i}`, scene);
+
+    // Build initial geometry with max spikes
+    const positions = new Float32Array(VERTS_PER_STARBURST * 3);
+    const colors = new Float32Array(VERTS_PER_STARBURST * 4);
+    const indices: number[] = [];
+
+    // Default geometry (will be overwritten on spawn)
+    buildStarburstGeometry(
+      STARBURST_SPIKES, positions, colors,
+      STARBURST_CENTER_HUES[0], STARBURST_VALLEY_HUES[0], STARBURST_TIP_COLOR,
+    );
+
+    // Fan triangles: each pair of adjacent rim vertices forms a triangle with center
+    for (let j = 0; j < MAX_SPIKES * 2; j++) {
+      const next = (j + 1) % (MAX_SPIKES * 2);
+      indices.push(0, j + 1, next + 1);
+    }
+
+    const normals = new Float32Array(VERTS_PER_STARBURST * 3);
+
+    const vd = new VertexData();
+    vd.positions = positions;
+    vd.indices = indices;
+    vd.normals = normals;
+    vd.colors = colors;
+    vd.applyToMesh(mesh, true); // updatable
+
+    const mat = new StandardMaterial(`starburstMat_${i}`, scene);
+    mat.emissiveColor = new Color3(1, 1, 1);
     mat.disableLighting = true;
+    mat.backFaceCulling = false;
     mesh.material = mat;
+    mesh.hasVertexAlpha = true;
+    mesh.billboardMode = Mesh.BILLBOARDMODE_ALL;
     mesh.setEnabled(false);
-    sparks.push(mesh);
-    sparkMats.push(mat);
-    sparkData.push({ velX: 0, velY: 0, velZ: 0, timer: 0, lifetime: IMPACT_LIFE });
+
+    starbursts.push(mesh);
+    starburstMats.push(mat);
+    starburstData.push({ timer: 0, lifetime: STARBURST_LIFE, rotSpeed: 0, maxScale: STARBURST_MAX_SCALE });
   }
 
   // Ring-out burst pool
@@ -101,7 +198,7 @@ export function createImpactFx(scene: Scene): ImpactFxState {
     mesh.setEnabled(false);
     bursts.push(mesh);
     burstMats.push(mat);
-    burstData.push({ velX: 0, velY: 0, velZ: 0, timer: 0, lifetime: BURST_LIFE });
+    burstData.push({ velX: 0, velY: 0, velZ: 0, rotSpeed: 0, timer: 0, lifetime: BURST_LIFE });
   }
 
   // Speed lines pool
@@ -124,16 +221,6 @@ export function createImpactFx(scene: Scene): ImpactFxState {
     lineData.push({ timer: 0, lifetime: SPEED_LINE_LIFE });
   }
 
-  // Screen flash overlay
-  const flashUI = AdvancedDynamicTexture.CreateFullscreenUI('impactFlashUI', true, scene);
-  const flashRect = new Rectangle('flashRect');
-  flashRect.width = 1;
-  flashRect.height = 1;
-  flashRect.background = '#ffffff';
-  flashRect.thickness = 0;
-  flashRect.alpha = 0;
-  flashUI.addControl(flashRect);
-
   return {
     hitlagTimer: 0,
     shakeTimer: 0,
@@ -143,15 +230,14 @@ export function createImpactFx(scene: Scene): ImpactFxState {
     koTimer: 0,
     koDuration: KO_ZOOM_DURATION,
     koActive: false,
-    sparks,
-    sparkMats,
-    sparkData,
+    koTargetX: 0,
+    koTargetZ: 0,
+    starbursts,
+    starburstMats,
+    starburstData,
     bursts,
     burstMats,
     burstData,
-    flashUI,
-    flashRect,
-    flashTimer: 0,
     lines,
     lineMats,
     lineData,
@@ -160,55 +246,69 @@ export function createImpactFx(scene: Scene): ImpactFxState {
   };
 }
 
-/** Process hit events from game logic — triggers hitlag, shake, and impact sparks. */
+/** Process hit events from game logic — triggers hitlag, shake, and starburst. */
 export function processHitEvents(fx: ImpactFxState, events: HitEvent[]): void {
+  const settings = getSettings();
   for (const event of events) {
     // Hitlag: duration scales with force
-    const hitlagDuration = Math.min(HITLAG_BASE + event.force * HITLAG_FORCE_SCALE, HITLAG_MAX);
-    if (hitlagDuration > fx.hitlagTimer) {
-      fx.hitlagTimer = hitlagDuration;
+    if (settings.hitlagEnabled) {
+      const hitlagDuration = Math.min(HITLAG_BASE + event.force * HITLAG_FORCE_SCALE, HITLAG_MAX);
+      if (hitlagDuration > fx.hitlagTimer) {
+        fx.hitlagTimer = hitlagDuration;
+      }
     }
 
     // Screen shake: intensity scales with force relative to base knockback
-    const forceRatio = event.force / KNOCKBACK_FORCE;
-    const intensity = SHAKE_INTENSITY * forceRatio;
-    if (intensity > fx.shakeIntensity) {
-      fx.shakeTimer = SHAKE_DURATION;
-      fx.shakeIntensity = intensity;
-      // Bias shake direction toward knockback direction (game Y → scene Z)
-      fx.shakeDirX = event.dir.x;
-      fx.shakeDirZ = event.dir.y;
+    if (settings.screenShakeEnabled) {
+      const forceRatio = event.force / KNOCKBACK_FORCE;
+      const intensity = SHAKE_INTENSITY * forceRatio;
+      if (intensity > fx.shakeIntensity) {
+        fx.shakeTimer = SHAKE_DURATION;
+        fx.shakeIntensity = intensity;
+        fx.shakeDirX = event.dir.x;
+        fx.shakeDirZ = event.dir.y;
+      }
     }
 
     // KO zoom
-    if (event.isKO && !fx.koActive) {
+    if (settings.screenShakeEnabled && event.isKO && !fx.koActive) {
       fx.koActive = true;
       fx.koTimer = fx.koDuration;
+      fx.koTargetX = event.pos.x;
+      fx.koTargetZ = event.pos.y;
     }
 
-    // Spawn impact sparks at contact point
+    // Spawn starburst at contact point
     const isStrong = event.force > KNOCKBACK_FORCE * 1.5;
-    const color: Color3Tuple = isStrong ? IMPACT_STRONG_COLOR : IMPACT_COLOR;
-    const sparkCount = isStrong ? IMPACT_COUNT : Math.ceil(IMPACT_COUNT * 0.6);
-    let spawned = 0;
-    for (let i = 0; i < fx.sparkData.length && spawned < sparkCount; i++) {
-      if (fx.sparkData[i].timer > 0) continue;
-      // Random velocity in hemisphere around knockback direction
-      const spread = Math.PI * 0.7;
-      const baseAngle = Math.atan2(event.dir.y, event.dir.x);
-      const angle = baseAngle + (Math.random() - 0.5) * spread;
-      const speed = IMPACT_SPEED * (0.5 + Math.random() * 0.5);
-      fx.sparkData[i].velX = Math.cos(angle) * speed;
-      fx.sparkData[i].velZ = Math.sin(angle) * speed;
-      fx.sparkData[i].velY = (Math.random() * 0.5 + 0.3) * speed;
-      fx.sparkData[i].timer = IMPACT_LIFE;
-      fx.sparkData[i].lifetime = IMPACT_LIFE;
-      // Position at contact point (game coords → scene coords: x stays, y→z)
-      fx.sparks[i].position.set(event.pos.x, 0.5, event.pos.y);
-      fx.sparks[i].setEnabled(true);
-      fx.sparkMats[i].emissiveColor.set(color[0], color[1], color[2]);
-      fx.sparkMats[i].alpha = 1;
-      spawned++;
+    for (let i = 0; i < fx.starburstData.length; i++) {
+      if (fx.starburstData[i].timer > 0) continue;
+
+      // Pick random color hue
+      const hueIdx = Math.floor(Math.random() * STARBURST_CENTER_HUES.length);
+      const centerColor = STARBURST_CENTER_HUES[hueIdx];
+      const valleyColor = STARBURST_VALLEY_HUES[hueIdx];
+      const spikeCount = isStrong ? STARBURST_SPIKES_STRONG : STARBURST_SPIKES;
+
+      // Regenerate randomized geometry
+      const positions = fx.starbursts[i].getVerticesData(VertexBuffer.PositionKind) as Float32Array;
+      const colors = fx.starbursts[i].getVerticesData(VertexBuffer.ColorKind) as Float32Array;
+      if (!positions || !colors) break;
+      buildStarburstGeometry(spikeCount, positions, colors, centerColor, valleyColor, STARBURST_TIP_COLOR);
+      fx.starbursts[i].updateVerticesData(VertexBuffer.PositionKind, positions);
+      fx.starbursts[i].updateVerticesData(VertexBuffer.ColorKind, colors);
+
+      // Position at impact point
+      fx.starbursts[i].position.set(event.pos.x, 0.5, event.pos.y);
+      fx.starbursts[i].rotation.z = Math.random() * Math.PI * 2;
+      fx.starbursts[i].scaling.setAll(0);
+      fx.starbursts[i].setEnabled(true);
+      fx.starburstMats[i].alpha = 1;
+
+      fx.starburstData[i].timer = STARBURST_LIFE;
+      fx.starburstData[i].lifetime = STARBURST_LIFE;
+      fx.starburstData[i].rotSpeed = STARBURST_SPIN * (Math.random() < 0.5 ? 1 : -1);
+      fx.starburstData[i].maxScale = isStrong ? STARBURST_MAX_SCALE_STRONG : STARBURST_MAX_SCALE;
+      break; // One starburst per event
     }
   }
 }
@@ -232,9 +332,6 @@ export function triggerRingOut(fx: ImpactFxState, pos: Vec2, playerIdx: number):
     fx.burstMats[i].emissiveColor.set(color[0], color[1], color[2]);
     fx.burstMats[i].alpha = 1;
   }
-
-  // Screen flash
-  fx.flashTimer = FLASH_DURATION;
 }
 
 /** Spawn speed lines behind a fast-moving player. */
@@ -294,14 +391,18 @@ export function updateImpactFx(
       fx.koTimer = 0;
     } else {
       dtScale = KO_SLOW_MO;
-      // Zoom: lerp camera Y toward target
       const progress = 1 - fx.koTimer / fx.koDuration;
-      // Ease in-out: zoom in first half, zoom out second half
+      // Ease in-out: rotate toward impact first half, back to base second half
       const zoomT = progress < 0.5
         ? progress * 2  // 0→1
         : 2 - progress * 2; // 1→0
-      const zoomOffset = KO_ZOOM_AMOUNT * zoomT;
-      camera.position.y = fx.baseCamPos.y - zoomOffset;
+      // Zoom in (lower camera Y) and rotate to face impact point
+      camera.position.y = fx.baseCamPos.y - KO_ZOOM_AMOUNT * zoomT;
+      camera.setTarget(new Vector3(
+        fx.baseCamTarget.x + (fx.koTargetX - fx.baseCamTarget.x) * zoomT,
+        fx.baseCamTarget.y,
+        fx.baseCamTarget.z + (fx.koTargetZ - fx.baseCamTarget.z) * zoomT,
+      ));
     }
   }
 
@@ -323,35 +424,33 @@ export function updateImpactFx(
     }
   }
 
-  // Restore camera X/Z when no shake (and no KO zoom, let that control Y)
+  // Restore camera X/Z when no shake
   if (fx.shakeTimer <= 0) {
     camera.position.x = fx.baseCamPos.x;
     camera.position.z = fx.baseCamPos.z;
   }
+  // Restore camera Y and target when no KO zoom
   if (!fx.koActive) {
     camera.position.y = fx.baseCamPos.y;
+    camera.setTarget(fx.baseCamTarget.clone());
   }
 
-  // --- Impact sparks ---
-  for (let i = 0; i < fx.sparkData.length; i++) {
-    const p = fx.sparkData[i];
-    if (p.timer <= 0) continue;
-    p.timer -= dt;
-    if (p.timer <= 0) {
-      fx.sparks[i].setEnabled(false);
+  // --- Starbursts ---
+  for (let i = 0; i < fx.starburstData.length; i++) {
+    const d = fx.starburstData[i];
+    if (d.timer <= 0) continue;
+    d.timer -= dt;
+    if (d.timer <= 0) {
+      fx.starbursts[i].setEnabled(false);
       continue;
     }
-    // Move
-    fx.sparks[i].position.x += p.velX * dt;
-    fx.sparks[i].position.y += p.velY * dt;
-    fx.sparks[i].position.z += p.velZ * dt;
-    // Gravity
-    p.velY -= 15 * dt;
-    // Fade + shrink
-    const t = p.timer / p.lifetime;
-    fx.sparkMats[i].alpha = t;
-    const scale = t * 1.5;
-    fx.sparks[i].scaling.setAll(scale);
+    const t = d.timer / d.lifetime; // 1→0
+    const progress = 1 - t; // 0→1
+    // Ease-out expansion: fast start, slow end
+    const eased = 1 - (1 - progress) * (1 - progress);
+    fx.starbursts[i].scaling.setAll(eased * d.maxScale);
+    fx.starburstMats[i].alpha = t;
+    fx.starbursts[i].rotation.z += d.rotSpeed * dt;
   }
 
   // --- Ring-out burst ---
@@ -370,15 +469,6 @@ export function updateImpactFx(
     const t = p.timer / p.lifetime;
     fx.burstMats[i].alpha = t;
     fx.bursts[i].scaling.setAll(t * 2);
-  }
-
-  // --- Screen flash ---
-  if (fx.flashTimer > 0) {
-    fx.flashTimer -= dt;
-    const t = Math.max(0, fx.flashTimer / FLASH_DURATION);
-    fx.flashRect.alpha = FLASH_ALPHA * t;
-  } else {
-    fx.flashRect.alpha = 0;
   }
 
   // --- Speed lines ---
@@ -419,13 +509,11 @@ export function resetImpactFx(fx: ImpactFxState, camera: FreeCamera): void {
   fx.shakeIntensity = 0;
   fx.koActive = false;
   fx.koTimer = 0;
-  fx.flashTimer = 0;
-  fx.flashRect.alpha = 0;
   camera.position.set(fx.baseCamPos.x, fx.baseCamPos.y, fx.baseCamPos.z);
   camera.setTarget(fx.baseCamTarget.clone());
-  for (let i = 0; i < fx.sparkData.length; i++) {
-    fx.sparkData[i].timer = 0;
-    fx.sparks[i].setEnabled(false);
+  for (let i = 0; i < fx.starburstData.length; i++) {
+    fx.starburstData[i].timer = 0;
+    fx.starbursts[i].setEnabled(false);
   }
   for (let i = 0; i < fx.burstData.length; i++) {
     fx.burstData[i].timer = 0;

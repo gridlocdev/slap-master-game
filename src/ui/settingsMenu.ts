@@ -9,6 +9,7 @@ import {
 import {
   getSettings, setMusicVolume, setSfxVolume,
   setP1Scheme, setP2Scheme,
+  setHitlagEnabled, setScreenShakeEnabled,
 } from '../settings.ts';
 import type { ControlScheme } from '../types.ts';
 import { createIconRow, ICON_SIZE } from './iconRow.ts';
@@ -37,7 +38,17 @@ interface InputRow {
   player: 1 | 2;
 }
 
-type SettingsRow = SliderRow | InputRow;
+interface ToggleRow {
+  kind: 'toggle';
+  wrapper: Rectangle;
+  label: TextBlock;
+  valueText: TextBlock;
+  border: string;
+  getVal: () => boolean;
+  toggle: () => void;
+}
+
+type SettingsRow = SliderRow | InputRow | ToggleRow;
 
 export interface SettingsMenuUI {
   ui: AdvancedDynamicTexture;
@@ -80,7 +91,7 @@ export function createSettingsMenu(scene: Scene): SettingsMenuUI {
   // Centered panel
   const panel = new Rectangle('settingsPanel');
   panel.width = '580px';
-  panel.height = '480px';
+  panel.height = '600px';
   panel.thickness = 2;
   panel.color = '#555577';
   panel.cornerRadius = 12;
@@ -122,6 +133,18 @@ export function createSettingsMenu(scene: Scene): SettingsMenuUI {
   rows.push(createSliderRow(rowStack, 'SFX Volume', '#4488ff', s.sfxVolume,
     () => getSettings().sfxVolume,
     (delta) => setSfxVolume(getSettings().sfxVolume + delta),
+  ));
+
+  // Hitlag toggle
+  rows.push(createToggleRow(rowStack, 'Hitlag', '#cc66ff', s.hitlagEnabled,
+    () => getSettings().hitlagEnabled,
+    () => setHitlagEnabled(!getSettings().hitlagEnabled),
+  ));
+
+  // Screen Shake toggle
+  rows.push(createToggleRow(rowStack, 'Screen Shake', '#ff6644', s.screenShakeEnabled,
+    () => getSettings().screenShakeEnabled,
+    () => setScreenShakeEnabled(!getSettings().screenShakeEnabled),
   ));
 
   // P1 Input
@@ -262,6 +285,52 @@ function createInputRow(
   return { kind: 'input', wrapper, label: labelText, deviceText, border, player };
 }
 
+function createToggleRow(
+  parent: StackPanel, label: string, border: string, initialValue: boolean,
+  getVal: () => boolean, toggle: () => void,
+): ToggleRow {
+  const wrapper = new Rectangle(`settingsToggle_${label}`);
+  wrapper.width = 1;
+  wrapper.height = '60px';
+  wrapper.thickness = 3;
+  wrapper.color = border;
+  wrapper.cornerRadius = 6;
+  wrapper.background = '#222233';
+  wrapper.paddingTop = '4px';
+  wrapper.paddingBottom = '4px';
+  parent.addControl(wrapper);
+
+  const labelText = new TextBlock(`settingsLabel_${label}`, label);
+  labelText.fontSize = 20;
+  labelText.fontFamily = 'monospace';
+  labelText.fontWeight = 'bold';
+  labelText.color = '#ffffff';
+  labelText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+  labelText.left = '16px';
+  labelText.width = '200px';
+  labelText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+  wrapper.addControl(labelText);
+
+  const valueText = new TextBlock(`settingsVal_${label}`, initialValue ? 'ON' : 'OFF');
+  valueText.fontSize = 20;
+  valueText.fontFamily = 'monospace';
+  valueText.fontWeight = 'bold';
+  valueText.color = initialValue ? '#44ff44' : '#ff4444';
+  valueText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+  valueText.left = '-16px';
+  valueText.width = '80px';
+  valueText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+  wrapper.addControl(valueText);
+
+  return { kind: 'toggle', wrapper, label: labelText, valueText, border, getVal, toggle };
+}
+
+function syncToggleVisual(row: ToggleRow): void {
+  const v = row.getVal();
+  row.valueText.text = v ? 'ON' : 'OFF';
+  row.valueText.color = v ? '#44ff44' : '#ff4444';
+}
+
 function updateRowHighlights(menuUI: SettingsMenuUI): void {
   for (let i = 0; i < menuUI.rows.length; i++) {
     const row = menuUI.rows[i];
@@ -379,6 +448,15 @@ export function updateSettingsMenu(menuUI: SettingsMenuUI): 'back' | null {
     if (goRight) {
       currentRow.adjust(SETTINGS_VOL_STEP);
       syncSliderVisual(currentRow);
+    }
+  }
+
+  // Toggle rows: confirm or left/right to toggle
+  if (currentRow.kind === 'toggle') {
+    const kbConfirm = isKeyJustPressed('Space') || isKeyJustPressed('Enter');
+    if (kbConfirm || gamepadConfirm || goLeft || goRight) {
+      currentRow.toggle();
+      syncToggleVisual(currentRow);
     }
   }
 
