@@ -211,7 +211,8 @@ export const STARBURST_VALLEY_HUES: Color3Tuple[] = [
 ];
 
 // Impact effects — KO zoom
-export const KO_ZOOM_DURATION = 0.8;
+export const KO_ZOOM_DURATION = 1.3;
+export const KO_ZOOM_HOLD = 0.5;
 export const KO_SLOW_MO = 0.15;
 export const KO_ZOOM_AMOUNT = 4;
 export const KO_PREDICT_TIME = 0.3;

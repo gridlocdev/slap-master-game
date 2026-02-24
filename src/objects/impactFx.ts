@@ -18,7 +18,7 @@ import {
   STARBURST_LIFE, STARBURST_MAX_SCALE, STARBURST_MAX_SCALE_STRONG,
   STARBURST_SPIN, STARBURST_TIP_COLOR,
   STARBURST_CENTER_HUES, STARBURST_VALLEY_HUES,
-  KO_ZOOM_DURATION, KO_SLOW_MO, KO_ZOOM_AMOUNT,
+  KO_ZOOM_DURATION, KO_ZOOM_HOLD, KO_SLOW_MO, KO_ZOOM_AMOUNT,
   BURST_COUNT, BURST_SIZE, BURST_SPEED, BURST_LIFE,
   SPEED_LINE_COUNT, SPEED_LINE_LENGTH, SPEED_LINE_WIDTH, SPEED_LINE_LIFE,
   SPEED_LINE_COLOR,
@@ -391,11 +391,22 @@ export function updateImpactFx(
       fx.koTimer = 0;
     } else {
       dtScale = KO_SLOW_MO;
-      const progress = 1 - fx.koTimer / fx.koDuration;
-      // Ease in-out: rotate toward impact first half, back to base second half
-      const zoomT = progress < 0.5
-        ? progress * 2  // 0→1
-        : 2 - progress * 2; // 1→0
+      const elapsed = fx.koDuration - fx.koTimer;
+      const zoomIn = 0.4;
+      const zoomOut = fx.koDuration - KO_ZOOM_HOLD - zoomIn;
+      let zoomT: number;
+      if (elapsed < zoomIn) {
+        // Fast zoom in (cubic ease-out)
+        const t = elapsed / zoomIn;
+        zoomT = 1 - (1 - t) * (1 - t) * (1 - t);
+      } else if (elapsed < zoomIn + KO_ZOOM_HOLD) {
+        // Hold at peak
+        zoomT = 1;
+      } else {
+        // Fast zoom out (cubic ease-in)
+        const t = (elapsed - zoomIn - KO_ZOOM_HOLD) / zoomOut;
+        zoomT = 1 - t * t * t;
+      }
       // Zoom in (lower camera Y) and rotate to face impact point
       camera.position.y = fx.baseCamPos.y - KO_ZOOM_AMOUNT * zoomT;
       camera.setTarget(new Vector3(
