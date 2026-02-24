@@ -259,7 +259,7 @@ export function processHitEvents(fx: ImpactFxState, events: HitEvent[]): void {
     }
 
     // Screen shake: intensity scales with force relative to base knockback
-    if (settings.screenShakeEnabled) {
+    if (settings.screenShakeEnabled && !fx.koActive) {
       const forceRatio = event.force / KNOCKBACK_FORCE;
       const intensity = SHAKE_INTENSITY * forceRatio;
       if (intensity > fx.shakeIntensity) {

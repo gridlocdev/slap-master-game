@@ -30,6 +30,7 @@ export function handleAbilityInput(player: PlayerState, input: PlayerInput, stat
       if (player.abilityCooldown <= 0 && !player.isDashing) {
         player.isDashing = true;
         player.dashTimer = DASH_DURATION;
+        player.dashHasHit = false;
         player.dashDir = {
           x: Math.cos(player.facingAngle),
           y: Math.sin(player.facingAngle),
@@ -86,7 +87,7 @@ export function updateDash(player: PlayerState, state: GameState, otherPlayer: P
   const dist = Math.sqrt(dx * dx + dy * dy);
   const hitDist = player.radius + otherPlayer.radius;
 
-  if (dist < hitDist && dist > 0) {
+  if (dist < hitDist && dist > 0 && !player.dashHasHit) {
     const dirX = dx / dist;
     const dirY = dy / dist;
     otherPlayer.knockbackVel.x += dirX * DASH_KNOCKBACK;
@@ -95,6 +96,9 @@ export function updateDash(player: PlayerState, state: GameState, otherPlayer: P
     emitHitEvent(state,
       { x: otherPlayer.pos.x - dirX * otherPlayer.radius, y: otherPlayer.pos.y - dirY * otherPlayer.radius },
       { x: dirX, y: dirY }, DASH_KNOCKBACK, attackerIdx, otherPlayer);
+    player.dashHasHit = true;
+    player.isDashing = false;
+    player.dashTimer = 0;
   }
 
   if (player.dashTimer <= 0) {

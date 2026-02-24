@@ -88,7 +88,7 @@ export const TRIGGER_THRESHOLD = 0.3;
 export const ABILITY_COOLDOWN = 3;
 export const DASH_SPEED = 12;
 export const DASH_DURATION = 0.3;
-export const DASH_KNOCKBACK = 5;
+export const DASH_KNOCKBACK = 12;
 export const STINK_CLOUD_DURATION = 3;
 export const STINK_CLOUD_RADIUS = 1.2;
 export const STINK_CLOUD_SLOW = 0.5;
@@ -211,7 +211,7 @@ export const STARBURST_VALLEY_HUES: Color3Tuple[] = [
 ];
 
 // Impact effects — KO zoom
-export const KO_ZOOM_DURATION = 0.5;
+export const KO_ZOOM_DURATION = 0.8;
 export const KO_SLOW_MO = 0.15;
 export const KO_ZOOM_AMOUNT = 4;
 export const KO_PREDICT_TIME = 0.3;

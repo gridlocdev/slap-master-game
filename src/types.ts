@@ -67,6 +67,7 @@ export interface PlayerState {
   isDashing: boolean;
   dashTimer: number;
   dashDir: Vec2;
+  dashHasHit: boolean;
   tauntTimer: number;
   lastSlapLeftTime: number;
   lastSlapRightTime: number;

@@ -35,6 +35,7 @@ function createPlayer(x: number, y: number, ability: AbilityType): PlayerState {
     isDashing: false,
     dashTimer: 0,
     dashDir: { x: 0, y: 0 },
+    dashHasHit: false,
     tauntTimer: 0,
     lastSlapLeftTime: 0,
     lastSlapRightTime: 0,
