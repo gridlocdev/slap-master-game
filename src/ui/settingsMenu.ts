@@ -11,6 +11,7 @@ import {
   setP1Scheme, setP2Scheme,
   setHitlagEnabled, setScreenShakeEnabled,
 } from '../settings.ts';
+import { updateMusicVolume } from '../audio.ts';
 import type { ControlScheme } from '../types.ts';
 import { createIconRow, ICON_SIZE } from './iconRow.ts';
 import { KB_ICONS, GP_ICONS } from './inputIcons.ts';
@@ -444,10 +445,12 @@ export function updateSettingsMenu(menuUI: SettingsMenuUI): 'back' | null {
     if (goLeft) {
       currentRow.adjust(-SETTINGS_VOL_STEP);
       syncSliderVisual(currentRow);
+      if (menuUI.selectedIndex === 0) updateMusicVolume();
     }
     if (goRight) {
       currentRow.adjust(SETTINGS_VOL_STEP);
       syncSliderVisual(currentRow);
+      if (menuUI.selectedIndex === 0) updateMusicVolume();
     }
   }
 
