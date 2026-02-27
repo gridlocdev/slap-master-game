@@ -17,6 +17,7 @@ import {
   isP2Unassigned,
 } from './inputAssign.ts';
 import { getP1KeyMap, getP2KeyMap, getP1PadIndex, getP2PadIndex } from '../settings.ts';
+import { playMenuSelectSfx, playMenuBackSfx } from '../audio.ts';
 import type { InputAssignUI } from './inputAssign.ts';
 import {
   KB_ICONS, GP_ICONS,
@@ -810,6 +811,7 @@ export function updateSelection(selUI: SelectionUI, state: GameState): 'ready' |
       const gamepadBack = (p1Pad !== null && isGamepadBJustPressed(p1Pad))
         || (p2Pad !== null && isGamepadBJustPressed(p2Pad));
       if (isKeyJustPressed('Escape') || gamepadBack) {
+        playMenuBackSfx();
         return 'back';
       }
     }
@@ -912,6 +914,7 @@ function updateSelectionAI(selUI: SelectionUI): 'ready' | 'back' | null {
     if (!aiPanel.confirmed) {
       const gamepadBack = p1Pad !== null && isGamepadBJustPressed(p1Pad);
       if (isKeyJustPressed('Escape') || gamepadBack) {
+        playMenuBackSfx();
         return 'back';
       }
     }
@@ -954,9 +957,11 @@ function handlePlayerSelection(
 
   if (isKeyJustPressed(leftKey)) {
     panel.selectedIndex = (panel.selectedIndex - 1 + CARD_COUNT) % CARD_COUNT;
+    playMenuSelectSfx();
   }
   if (isKeyJustPressed(rightKey)) {
     panel.selectedIndex = (panel.selectedIndex + 1) % CARD_COUNT;
+    playMenuSelectSfx();
   }
   if (isKeyJustPressed(confirmKey1) || isKeyJustPressed(confirmKey2)) {
     confirmPanel(panel);
@@ -990,9 +995,11 @@ function handleGamepadSelection(panel: PlayerSelectionPanel, padIdx: number): vo
 
   if (goLeft) {
     panel.selectedIndex = (panel.selectedIndex - 1 + CARD_COUNT) % CARD_COUNT;
+    playMenuSelectSfx();
   }
   if (goRight) {
     panel.selectedIndex = (panel.selectedIndex + 1) % CARD_COUNT;
+    playMenuSelectSfx();
   }
   prevStickX[padIdx] = sx;
   prevDpadLeft[padIdx] = dpadL;

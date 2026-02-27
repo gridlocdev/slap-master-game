@@ -1,3 +1,4 @@
+import { playSlapHitSfx, playRingOutSfx } from '../audio.ts';
 import {
   Scene,
   FreeCamera,
@@ -250,6 +251,7 @@ export function createImpactFx(scene: Scene): ImpactFxState {
 export function processHitEvents(fx: ImpactFxState, events: HitEvent[]): void {
   const settings = getSettings();
   for (const event of events) {
+    playSlapHitSfx();
     // Hitlag: duration scales with force
     if (settings.hitlagEnabled) {
       const hitlagDuration = Math.min(HITLAG_BASE + event.force * HITLAG_FORCE_SCALE, HITLAG_MAX);
@@ -315,6 +317,7 @@ export function processHitEvents(fx: ImpactFxState, events: HitEvent[]): void {
 
 /** Trigger ring-out burst at player position. */
 export function triggerRingOut(fx: ImpactFxState, pos: Vec2, playerIdx: number): void {
+  playRingOutSfx();
   const color = playerIdx === 0 ? P1_BODY_COLOR : P2_BODY_COLOR;
 
   // Activate burst particles

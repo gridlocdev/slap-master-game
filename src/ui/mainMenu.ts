@@ -1,6 +1,7 @@
 import { Scene } from '@babylonjs/core';
 import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, StackPanel } from '@babylonjs/gui';
 import { isKeyJustPressed } from '../input.ts';
+import { playMenuSelectSfx } from '../audio.ts';
 import {
   MENU_TITLE_FONT_SIZE, MENU_BUTTON_FONT_SIZE, MENU_STICK_THRESHOLD,
 } from '../constants.ts';
@@ -172,6 +173,7 @@ export function updateMainMenu(menuUI: MainMenuUI): string | null {
 
   if (moved) {
     updateButtonVisuals(menuUI);
+    playMenuSelectSfx();
   }
 
   // Confirm

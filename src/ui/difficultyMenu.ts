@@ -1,6 +1,7 @@
 import { Scene } from '@babylonjs/core';
 import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, StackPanel } from '@babylonjs/gui';
 import { isKeyJustPressed } from '../input.ts';
+import { playMenuSelectSfx, playMenuBackSfx } from '../audio.ts';
 import { MENU_STICK_THRESHOLD } from '../constants.ts';
 import type { AIDifficulty } from '../types.ts';
 
@@ -192,10 +193,12 @@ export function updateDifficultyMenu(menuUI: DifficultyMenuUI): AIDifficulty | '
 
   if (moved) {
     updateButtonVisuals(menuUI);
+    playMenuSelectSfx();
   }
 
   // Back: Escape or gamepad B
   if (isKeyJustPressed('Escape') || gamepadBack) {
+    playMenuBackSfx();
     return 'back';
   }
 

@@ -29,7 +29,7 @@ import type { DifficultyMenuUI } from './ui/difficultyMenu.ts';
 import { createSettingsMenu, updateSettingsMenu, destroySettingsMenu } from './ui/settingsMenu.ts';
 import type { SettingsMenuUI } from './ui/settingsMenu.ts';
 import { RESTART_DELAY, SPEED_LINE_THRESHOLD } from './constants.ts';
-import { playMenuBGM, fadeOutMenuBGM, stopMenuBGM } from './audio.ts';
+import { playMenuBGM, fadeOutMenuBGM, stopMenuBGM, playMenuBackSfx } from './audio.ts';
 import { initDefaultAssignment } from './ui/inputAssign.ts';
 import { createAIState, updateAI } from './ai/aiController.ts';
 import type { AIState } from './ai/aiConfig.ts';
@@ -291,6 +291,7 @@ engine.runRenderLoop(() => {
     // Pause toggle (skip if controls overlay is active)
     if (!controlsUI && checkPauseToggle()) {
       if (isPaused) {
+        playMenuBackSfx();
         resumeGame();
       } else {
         isPaused = true;
@@ -355,6 +356,7 @@ engine.runRenderLoop(() => {
     // Pause toggle (only when no winner, skip if controls overlay is active)
     if (!controlsUI && state.winner === null && checkPauseToggle()) {
       if (isPaused) {
+        playMenuBackSfx();
         resumeGame();
       } else {
         isPaused = true;

@@ -1,6 +1,7 @@
 import type { GameState, PlayerState, PlayerInput, Vec2, StinkCloud } from '../types.ts';
 import { isOutOfBounds } from './arena.ts';
 import { getHandWorldPos } from './combat.ts';
+import { playDashSfx, playMelonExplodeSfx } from '../audio.ts';
 import {
   ABILITY_COOLDOWN, DASH_SPEED, DASH_DURATION, DASH_KNOCKBACK,
   STINK_CLOUD_DURATION, STINK_CLOUD_RADIUS, STINK_CLOUD_SLOW,
@@ -28,6 +29,7 @@ export function handleAbilityInput(player: PlayerState, input: PlayerInput, stat
   switch (player.ability) {
     case 'burrito':
       if (player.abilityCooldown <= 0 && !player.isDashing) {
+        playDashSfx();
         player.isDashing = true;
         player.dashTimer = DASH_DURATION;
         player.dashHasHit = false;
@@ -237,6 +239,7 @@ export function checkMelonExplosion(state: GameState, playerIdx: number, input: 
   }
 
   if (exploded) {
+    playMelonExplodeSfx();
     // Reset slap times so we don't double-trigger
     player.lastSlapLeftTime = 0;
     player.lastSlapRightTime = 0;

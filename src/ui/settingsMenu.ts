@@ -11,7 +11,7 @@ import {
   setP1Scheme, setP2Scheme,
   setHitlagEnabled, setScreenShakeEnabled,
 } from '../settings.ts';
-import { updateMusicVolume } from '../audio.ts';
+import { updateMusicVolume, playMenuSelectSfx, playMenuBackSfx } from '../audio.ts';
 import type { ControlScheme } from '../types.ts';
 import { createIconRow, ICON_SIZE } from './iconRow.ts';
 import { KB_ICONS, GP_ICONS } from './inputIcons.ts';
@@ -437,7 +437,10 @@ export function updateSettingsMenu(menuUI: SettingsMenuUI): 'back' | null {
     prevButtonB.set(i, bDown);
   }
 
-  if (moved) updateRowHighlights(menuUI);
+  if (moved) {
+    updateRowHighlights(menuUI);
+    playMenuSelectSfx();
+  }
 
   // Slider adjustment
   const currentRow = menuUI.rows[menuUI.selectedIndex];
@@ -487,6 +490,7 @@ export function updateSettingsMenu(menuUI: SettingsMenuUI): 'back' | null {
 
   // Back
   if (isKeyJustPressed('Escape') || gamepadBack) {
+    playMenuBackSfx();
     return 'back';
   }
 
