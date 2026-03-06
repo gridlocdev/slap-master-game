@@ -3,8 +3,27 @@ import { getSettings } from './settings.ts';
 const ctx = new AudioContext();
 const musicGain = ctx.createGain();
 musicGain.connect(ctx.destination);
+const mainMenuMusicGain = ctx.createGain();
+mainMenuMusicGain.connect(ctx.destination);
 const sfxGain = ctx.createGain();
 sfxGain.connect(ctx.destination);
+
+// Resume AudioContext on first user interaction (browser autoplay policy)
+function resumeOnInteraction() {
+  if (ctx.state === 'suspended') {
+    ctx.resume().then(() => {
+      if (mainMenuPending || mainMenuPlaying) {
+        // mainMenuPlaying means buffer loaded & play was called but context was suspended
+        // mainMenuPending means play was called but buffer hadn't loaded yet
+        if (mainMenuBuffer && !mainMenuSource) playMainMenuBGM();
+      }
+    });
+  }
+  document.removeEventListener('pointerdown', resumeOnInteraction);
+  document.removeEventListener('keydown', resumeOnInteraction);
+}
+document.addEventListener('pointerdown', resumeOnInteraction);
+document.addEventListener('keydown', resumeOnInteraction);
 
 // --- BGM ---
 
@@ -17,8 +36,24 @@ function loadBuffer(url: string): Promise<AudioBuffer> {
   return fetch(url).then(r => r.arrayBuffer()).then(buf => ctx.decodeAudioData(buf));
 }
 
-loadBuffer('audio/bgm/Slap Master Menu.mp3')
+loadBuffer('audio/bgm/Slap Master Ability Select.mp3')
   .then(decoded => { menuBuffer = decoded; })
+  .catch(() => {});
+
+let mainMenuBuffer: AudioBuffer | null = null;
+let mainMenuSource: AudioBufferSourceNode | null = null;
+let mainMenuPlaying = false;
+let mainMenuFadeRaf = 0;
+let mainMenuPending = false;
+
+loadBuffer('audio/bgm/Slap Master Main Menu.mp3')
+  .then(decoded => {
+    mainMenuBuffer = decoded;
+    if (mainMenuPending) {
+      mainMenuPending = false;
+      playMainMenuBGM();
+    }
+  })
   .catch(() => {});
 
 function stopSource(): void {
@@ -30,7 +65,7 @@ function stopSource(): void {
   playing = false;
 }
 
-export function playMenuBGM(): void {
+export function playAbilitySelectBGM(): void {
   cancelAnimationFrame(fadeRaf);
   if (!menuBuffer) return;
   stopSource();
@@ -45,7 +80,7 @@ export function playMenuBGM(): void {
   playing = true;
 }
 
-export function fadeOutMenuBGM(durationMs = 500): void {
+export function fadeOutAbilitySelectBGM(durationMs = 500): void {
   if (!playing) return;
   const startVol = musicGain.gain.value;
   if (startVol === 0) { stopSource(); return; }
@@ -65,14 +100,71 @@ export function fadeOutMenuBGM(durationMs = 500): void {
   fadeRaf = requestAnimationFrame(tick);
 }
 
-export function stopMenuBGM(): void {
+export function stopAbilitySelectBGM(): void {
   cancelAnimationFrame(fadeRaf);
   stopSource();
 }
 
+// --- Main Menu BGM ---
+
+function stopMainMenuSource(): void {
+  if (mainMenuSource) {
+    mainMenuSource.stop();
+    mainMenuSource.disconnect();
+    mainMenuSource = null;
+  }
+  mainMenuPlaying = false;
+}
+
+export function playMainMenuBGM(): void {
+  cancelAnimationFrame(mainMenuFadeRaf);
+  if (!mainMenuBuffer) { mainMenuPending = true; return; }
+  stopMainMenuSource();
+  if (ctx.state === 'suspended') ctx.resume();
+  const src = ctx.createBufferSource();
+  src.buffer = mainMenuBuffer;
+  src.loop = true;
+  src.connect(mainMenuMusicGain);
+  mainMenuMusicGain.gain.value = getSettings().musicVolume / 100;
+  src.start();
+  mainMenuSource = src;
+  mainMenuPlaying = true;
+}
+
+export function fadeOutMainMenuBGM(durationMs = 500): void {
+  mainMenuPending = false;
+  if (!mainMenuPlaying) return;
+  const startVol = mainMenuMusicGain.gain.value;
+  if (startVol === 0) { stopMainMenuSource(); return; }
+  const startTime = performance.now();
+
+  function tick() {
+    const elapsed = performance.now() - startTime;
+    const t = Math.min(elapsed / durationMs, 1);
+    mainMenuMusicGain.gain.value = startVol * (1 - t);
+    if (t < 1) {
+      mainMenuFadeRaf = requestAnimationFrame(tick);
+    } else {
+      stopMainMenuSource();
+    }
+  }
+
+  mainMenuFadeRaf = requestAnimationFrame(tick);
+}
+
+export function stopMainMenuBGM(): void {
+  mainMenuPending = false;
+  cancelAnimationFrame(mainMenuFadeRaf);
+  stopMainMenuSource();
+}
+
 export function updateMusicVolume(): void {
+  const vol = getSettings().musicVolume / 100;
   if (playing) {
-    musicGain.gain.value = getSettings().musicVolume / 100;
+    musicGain.gain.value = vol;
+  }
+  if (mainMenuPlaying) {
+    mainMenuMusicGain.gain.value = vol;
   }
 }
 

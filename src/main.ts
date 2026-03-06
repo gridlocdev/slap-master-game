@@ -29,7 +29,7 @@ import type { DifficultyMenuUI } from './ui/difficultyMenu.ts';
 import { createSettingsMenu, updateSettingsMenu, destroySettingsMenu } from './ui/settingsMenu.ts';
 import type { SettingsMenuUI } from './ui/settingsMenu.ts';
 import { RESTART_DELAY, SPEED_LINE_THRESHOLD } from './constants.ts';
-import { playMenuBGM, fadeOutMenuBGM, stopMenuBGM, playMenuBackSfx } from './audio.ts';
+import { playAbilitySelectBGM, fadeOutAbilitySelectBGM, stopAbilitySelectBGM, playMenuBackSfx, playMainMenuBGM, fadeOutMainMenuBGM } from './audio.ts';
 import { initDefaultAssignment } from './ui/inputAssign.ts';
 import { createAIState, updateAI } from './ai/aiController.ts';
 import type { AIState } from './ai/aiConfig.ts';
@@ -91,6 +91,7 @@ setPlayerMeshesVisible(playerMeshes[0], false);
 setPlayerMeshesVisible(playerMeshes[1], false);
 demoScene = createDemoScene(engine);
 scene.autoClear = false;
+playMainMenuBGM();
 
 function startGame(p1Ability: AbilityType, p2Ability: AbilityType, scores: [number, number] = [0, 0]): void {
   state = createInitialState(p1Ability, p2Ability, scores);
@@ -100,7 +101,7 @@ function startGame(p1Ability: AbilityType, p2Ability: AbilityType, scores: [numb
   scoreApplied = false;
   gamePhase = 'countdown';
   countdownUI = createCountdownUI(scene);
-  fadeOutMenuBGM();
+  fadeOutAbilitySelectBGM();
   if (selectionUI) {
     destroySelectionUI(selectionUI);
     selectionUI = null;
@@ -167,7 +168,7 @@ function handlePauseAction(action: string | null): void {
 function goToSelection(): void {
   state = createSelectionState();
   gamePhase = 'selecting';
-  playMenuBGM();
+  playAbilitySelectBGM();
   selectionUI = createSelectionUI(scene, { mode: gameMode });
   if (countdownUI) {
     destroyCountdown(countdownUI);
@@ -193,7 +194,8 @@ function stopDemo(): void {
 }
 
 function goToMenu(): void {
-  stopMenuBGM();
+  stopAbilitySelectBGM();
+  playMainMenuBGM();
   state = createSelectionState();
   gamePhase = 'menu';
   mainMenuUI = createMainMenuUI(scene);
@@ -243,8 +245,9 @@ engine.runRenderLoop(() => {
         destroyDifficultyMenu(difficultyUI);
         difficultyUI = null;
         stopDemo();
+        fadeOutMainMenuBGM();
         gamePhase = 'selecting';
-        playMenuBGM();
+        playAbilitySelectBGM();
         selectionUI = createSelectionUI(scene, { mode: 'ai' });
         setPlayerMeshesVisible(playerMeshes[0], true);
         setPlayerMeshesVisible(playerMeshes[1], true);
@@ -256,8 +259,9 @@ engine.runRenderLoop(() => {
         destroyMainMenu(mainMenuUI);
         mainMenuUI = null;
         stopDemo();
+        fadeOutMainMenuBGM();
         gamePhase = 'selecting';
-        playMenuBGM();
+        playAbilitySelectBGM();
         selectionUI = createSelectionUI(scene, { mode: 'local' });
         setPlayerMeshesVisible(playerMeshes[0], true);
         setPlayerMeshesVisible(playerMeshes[1], true);
