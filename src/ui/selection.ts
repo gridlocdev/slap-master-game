@@ -17,7 +17,7 @@ import {
   isP2Unassigned,
 } from './inputAssign.ts';
 import { getP1KeyMap, getP2KeyMap, getP1PadIndex, getP2PadIndex } from '../settings.ts';
-import { playMenuSelectSfx, playMenuBackSfx } from '../audio.ts';
+import { playMenuSelectSfx, playMenuBackSfx, playReadyUpSfx } from '../audio.ts';
 import type { InputAssignUI } from './inputAssign.ts';
 import {
   KB_ICONS, GP_ICONS,
@@ -753,6 +753,7 @@ function createAbilityCard(parent: StackPanel, idx: number, key: string, label: 
 // --- Input handling ---
 
 function confirmPanel(panel: PlayerSelectionPanel): void {
+  playReadyUpSfx();
   panel.confirmed = true;
   if (panel.selectedIndex >= ABILITIES.length) {
     panel.resolvedAbility = ABILITIES[Math.floor(Math.random() * ABILITIES.length)];

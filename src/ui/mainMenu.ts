@@ -1,7 +1,7 @@
 import { Scene } from '@babylonjs/core';
 import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, StackPanel } from '@babylonjs/gui';
 import { isKeyJustPressed } from '../input.ts';
-import { playMenuSelectSfx } from '../audio.ts';
+import { playMenuSelectSfx, playEnterSfx } from '../audio.ts';
 import {
   MENU_TITLE_FONT_SIZE, MENU_BUTTON_FONT_SIZE, MENU_STICK_THRESHOLD,
 } from '../constants.ts';
@@ -179,6 +179,7 @@ export function updateMainMenu(menuUI: MainMenuUI): string | null {
   // Confirm
   const kbConfirm = isKeyJustPressed('Space') || isKeyJustPressed('Enter');
   if (kbConfirm || gamepadConfirm) {
+    playEnterSfx();
     return MENU_ITEMS[menuUI.selectedIndex].key;
   }
 

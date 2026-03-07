@@ -11,7 +11,7 @@ import {
   setP1Scheme, setP2Scheme,
   setHitlagEnabled, setScreenShakeEnabled,
 } from '../settings.ts';
-import { updateMusicVolume, playMenuSelectSfx, playMenuBackSfx } from '../audio.ts';
+import { updateMusicVolume, playMenuSelectSfx, playMenuBackSfx, playEnterSfx } from '../audio.ts';
 import type { ControlScheme } from '../types.ts';
 import { createIconRow, ICON_SIZE } from './iconRow.ts';
 import { KB_ICONS, GP_ICONS } from './inputIcons.ts';
@@ -461,6 +461,7 @@ export function updateSettingsMenu(menuUI: SettingsMenuUI): 'back' | null {
   if (currentRow.kind === 'toggle') {
     const kbConfirm = isKeyJustPressed('Space') || isKeyJustPressed('Enter');
     if (kbConfirm || gamepadConfirm || goLeft || goRight) {
+      playEnterSfx();
       currentRow.toggle();
       syncToggleVisual(currentRow);
     }
@@ -470,6 +471,7 @@ export function updateSettingsMenu(menuUI: SettingsMenuUI): 'back' | null {
   if (currentRow.kind === 'input') {
     const kbConfirm = isKeyJustPressed('Space') || isKeyJustPressed('Enter');
     if (kbConfirm || gamepadConfirm) {
+      playEnterSfx();
       menuUI.listeningRow = menuUI.selectedIndex;
       syncInputVisual(currentRow, true);
       // Init gamepad button tracking for listening

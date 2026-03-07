@@ -1,7 +1,7 @@
 import { Scene } from '@babylonjs/core';
 import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, StackPanel } from '@babylonjs/gui';
 import { isKeyJustPressed } from '../input.ts';
-import { playMenuSelectSfx } from '../audio.ts';
+import { playMenuSelectSfx, playEnterSfx } from '../audio.ts';
 import { MENU_STICK_THRESHOLD } from '../constants.ts';
 
 const PAUSE_ITEMS = [
@@ -193,6 +193,7 @@ export function updatePauseMenu(menuUI: PauseMenuUI): string | null {
   // Confirm
   const kbConfirm = isKeyJustPressed('Space') || isKeyJustPressed('Enter');
   if (kbConfirm || gamepadConfirm) {
+    playEnterSfx();
     return PAUSE_ITEMS[menuUI.selectedIndex].key;
   }
 

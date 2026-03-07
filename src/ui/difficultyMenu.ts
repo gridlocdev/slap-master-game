@@ -1,7 +1,7 @@
 import { Scene } from '@babylonjs/core';
 import { AdvancedDynamicTexture, TextBlock, Control, Rectangle, StackPanel } from '@babylonjs/gui';
 import { isKeyJustPressed } from '../input.ts';
-import { playMenuSelectSfx, playMenuBackSfx } from '../audio.ts';
+import { playMenuSelectSfx, playMenuBackSfx, playEnterSfx } from '../audio.ts';
 import { MENU_STICK_THRESHOLD } from '../constants.ts';
 import type { AIDifficulty } from '../types.ts';
 
@@ -205,6 +205,7 @@ export function updateDifficultyMenu(menuUI: DifficultyMenuUI): AIDifficulty | '
   // Confirm: Space/Enter or gamepad A
   const kbConfirm = isKeyJustPressed('Space') || isKeyJustPressed('Enter');
   if (kbConfirm || gamepadConfirm) {
+    playEnterSfx();
     return DIFFICULTY_ITEMS[menuUI.selectedIndex].key;
   }
 
