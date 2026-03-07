@@ -189,10 +189,13 @@ loadBuffer('audio/sfx/interactions/hurt/Ouch.wav').then(b => { ouchBuffer = b; }
 loadBuffer('audio/sfx/abilities/Launch.wav').then(b => { launchBuffer = b; }).catch(() => {});
 loadBuffer('audio/sfx/abilities/DeepBounce.wav').then(b => { deepBounceBuffer = b; }).catch(() => {});
 
-function playSfx(buffer: AudioBuffer | null): void {
+let gameSfxMuted = false;
+export function setGameSfxMuted(muted: boolean): void { gameSfxMuted = muted; }
+
+function playSfx(buffer: AudioBuffer | null, volume = 1): void {
   if (!buffer) return;
   if (ctx.state === 'suspended') ctx.resume();
-  sfxGain.gain.value = getSettings().sfxVolume / 100;
+  sfxGain.gain.value = (getSettings().sfxVolume / 100) * volume;
   const src = ctx.createBufferSource();
   src.buffer = buffer;
   src.connect(sfxGain);
@@ -200,12 +203,13 @@ function playSfx(buffer: AudioBuffer | null): void {
 }
 
 export function playSlapHitSfx(): void {
+  if (gameSfxMuted) return;
   if (hitBuffers.length === 0) return;
   playSfx(hitBuffers[Math.floor(Math.random() * hitBuffers.length)]);
 }
 
 export function playMenuSelectSfx(): void { playSfx(menuSelectBuffer); }
 export function playMenuBackSfx(): void { playSfx(menuBackBuffer); }
-export function playRingOutSfx(): void { playSfx(ouchBuffer); }
-export function playDashSfx(): void { playSfx(launchBuffer); }
-export function playMelonExplodeSfx(): void { playSfx(deepBounceBuffer); }
+export function playRingOutSfx(): void { if (gameSfxMuted) return; playSfx(ouchBuffer); }
+export function playDashSfx(): void { if (gameSfxMuted) return; playSfx(launchBuffer); }
+export function playMelonExplodeSfx(): void { if (gameSfxMuted) return; playSfx(deepBounceBuffer, 0.5); }

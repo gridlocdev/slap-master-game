@@ -29,7 +29,7 @@ import type { DifficultyMenuUI } from './ui/difficultyMenu.ts';
 import { createSettingsMenu, updateSettingsMenu, destroySettingsMenu } from './ui/settingsMenu.ts';
 import type { SettingsMenuUI } from './ui/settingsMenu.ts';
 import { RESTART_DELAY, SPEED_LINE_THRESHOLD } from './constants.ts';
-import { playAbilitySelectBGM, fadeOutAbilitySelectBGM, stopAbilitySelectBGM, playMenuBackSfx, playMainMenuBGM, fadeOutMainMenuBGM } from './audio.ts';
+import { playAbilitySelectBGM, fadeOutAbilitySelectBGM, stopAbilitySelectBGM, playMenuBackSfx, playMainMenuBGM, fadeOutMainMenuBGM, setGameSfxMuted } from './audio.ts';
 import { initDefaultAssignment } from './ui/inputAssign.ts';
 import { createAIState, updateAI } from './ai/aiController.ts';
 import type { AIState } from './ai/aiConfig.ts';
@@ -84,6 +84,7 @@ let aiState: AIState | null = null;
 let demoScene: DemoScene | null = null;
 
 // Enter menu mode
+setGameSfxMuted(true);
 setHudVisible(hud, false);
 setArenaMeshesVisible(scene, false);
 savedCamera = enterSelectionCamera(camera);
@@ -166,6 +167,7 @@ function handlePauseAction(action: string | null): void {
 }
 
 function goToSelection(): void {
+  setGameSfxMuted(false);
   state = createSelectionState();
   gamePhase = 'selecting';
   playAbilitySelectBGM();
@@ -194,6 +196,7 @@ function stopDemo(): void {
 }
 
 function goToMenu(): void {
+  setGameSfxMuted(true);
   stopAbilitySelectBGM();
   playMainMenuBGM();
   state = createSelectionState();
@@ -245,6 +248,7 @@ engine.runRenderLoop(() => {
         destroyDifficultyMenu(difficultyUI);
         difficultyUI = null;
         stopDemo();
+        setGameSfxMuted(false);
         fadeOutMainMenuBGM();
         gamePhase = 'selecting';
         playAbilitySelectBGM();
@@ -260,6 +264,7 @@ engine.runRenderLoop(() => {
         destroyMainMenu(mainMenuUI);
         mainMenuUI = null;
         stopDemo();
+        setGameSfxMuted(false);
         fadeOutMainMenuBGM();
         gamePhase = 'selecting';
         playAbilitySelectBGM();
