@@ -173,9 +173,10 @@ export function updateMusicVolume(): void {
 const hitBuffers: AudioBuffer[] = [];
 let menuSelectBuffer: AudioBuffer | null = null;
 let menuBackBuffer: AudioBuffer | null = null;
-let ouchBuffer: AudioBuffer | null = null;
 let launchBuffer: AudioBuffer | null = null;
 let deepBounceBuffer: AudioBuffer | null = null;
+let decreasingNoteBuffer: AudioBuffer | null = null;
+let repeatedNoiseBuffer: AudioBuffer | null = null;
 
 // Preload all SFX
 for (let i = 1; i <= 18; i++) {
@@ -185,9 +186,10 @@ for (let i = 1; i <= 18; i++) {
 }
 loadBuffer('audio/sfx/menu/Select.wav').then(b => { menuSelectBuffer = b; }).catch(() => {});
 loadBuffer('audio/sfx/menu/Error.wav').then(b => { menuBackBuffer = b; }).catch(() => {});
-loadBuffer('audio/sfx/interactions/hurt/Ouch.wav').then(b => { ouchBuffer = b; }).catch(() => {});
 loadBuffer('audio/sfx/abilities/Launch.wav').then(b => { launchBuffer = b; }).catch(() => {});
 loadBuffer('audio/sfx/abilities/DeepBounce.wav').then(b => { deepBounceBuffer = b; }).catch(() => {});
+loadBuffer('audio/sfx/interactions/ring-out/Decreasing note.wav').then(b => { decreasingNoteBuffer = b; }).catch(() => {});
+loadBuffer('audio/sfx/interactions/ring-out/Repeated noise.wav').then(b => { repeatedNoiseBuffer = b; }).catch(() => {});
 
 let gameSfxMuted = false;
 export function setGameSfxMuted(muted: boolean): void { gameSfxMuted = muted; }
@@ -210,6 +212,6 @@ export function playSlapHitSfx(): void {
 
 export function playMenuSelectSfx(): void { playSfx(menuSelectBuffer); }
 export function playMenuBackSfx(): void { playSfx(menuBackBuffer); }
-export function playRingOutSfx(): void { if (gameSfxMuted) return; playSfx(ouchBuffer); }
+export function playRingOutSfx(): void { if (gameSfxMuted) return; playSfx(decreasingNoteBuffer); playSfx(repeatedNoiseBuffer); }
 export function playDashSfx(): void { if (gameSfxMuted) return; playSfx(launchBuffer); }
 export function playMelonExplodeSfx(): void { if (gameSfxMuted) return; playSfx(deepBounceBuffer, 0.5); }
