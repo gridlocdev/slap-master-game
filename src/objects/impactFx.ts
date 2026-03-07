@@ -272,13 +272,6 @@ export function processHitEvents(fx: ImpactFxState, events: HitEvent[]): void {
       }
     }
 
-    // KO zoom
-    if (settings.screenShakeEnabled && event.isKO && !fx.koActive) {
-      fx.koActive = true;
-      fx.koTimer = fx.koDuration;
-      fx.koTargetX = event.pos.x;
-      fx.koTargetZ = event.pos.y;
-    }
 
     // Spawn starburst at contact point
     const isStrong = event.force > KNOCKBACK_FORCE * 1.5;
@@ -318,6 +311,13 @@ export function processHitEvents(fx: ImpactFxState, events: HitEvent[]): void {
 /** Trigger ring-out burst at player position. */
 export function triggerRingOut(fx: ImpactFxState, pos: Vec2, playerIdx: number): void {
   playRingOutSfx();
+  const settings = getSettings();
+  if (settings.screenShakeEnabled && !fx.koActive) {
+    fx.koActive = true;
+    fx.koTimer = fx.koDuration;
+    fx.koTargetX = pos.x;
+    fx.koTargetZ = pos.y;
+  }
   const color = playerIdx === 0 ? P1_BODY_COLOR : P2_BODY_COLOR;
 
   // Activate burst particles
