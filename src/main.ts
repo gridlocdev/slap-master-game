@@ -249,6 +249,7 @@ engine.runRenderLoop(() => {
         gamePhase = 'selecting';
         playAbilitySelectBGM();
         selectionUI = createSelectionUI(scene, { mode: 'ai' });
+        savedCamera = enterSelectionCamera(camera);
         setPlayerMeshesVisible(playerMeshes[0], true);
         setPlayerMeshesVisible(playerMeshes[1], true);
       }
@@ -263,6 +264,7 @@ engine.runRenderLoop(() => {
         gamePhase = 'selecting';
         playAbilitySelectBGM();
         selectionUI = createSelectionUI(scene, { mode: 'local' });
+        savedCamera = enterSelectionCamera(camera);
         setPlayerMeshesVisible(playerMeshes[0], true);
         setPlayerMeshesVisible(playerMeshes[1], true);
       } else if (action === 'ai') {
