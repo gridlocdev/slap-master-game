@@ -1,5 +1,6 @@
 import { Scene } from '@babylonjs/core';
 import { AdvancedDynamicTexture, TextBlock } from '@babylonjs/gui';
+import { playCountdownNumberSfx, playCountdownFinishSfx } from '../audio.ts';
 import {
   COUNTDOWN_STEPS,
   COUNTDOWN_ZOOM_IN_TIME,
@@ -37,6 +38,7 @@ export function createCountdownUI(scene: Scene): CountdownUI {
   text.alpha = 1;
   texture.addControl(text);
 
+  playCountdownNumberSfx();
   return { texture, text, timer: 0, step: 0 };
 }
 
@@ -59,6 +61,11 @@ export function updateCountdown(ui: CountdownUI, dt: number): boolean {
     ui.text.text = COUNTDOWN_STEPS[ui.step];
     // Adjust font size for the final text so it fits
     ui.text.fontSize = ui.step === COUNTDOWN_STEPS.length - 1 ? COUNTDOWN_FINAL_FONT_SIZE : COUNTDOWN_FONT_SIZE;
+    if (ui.step === COUNTDOWN_STEPS.length - 1) {
+      playCountdownFinishSfx();
+    } else {
+      playCountdownNumberSfx();
+    }
   }
 
   // Animation phases within a step

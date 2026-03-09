@@ -179,6 +179,8 @@ let decreasingNoteBuffer: AudioBuffer | null = null;
 let repeatedNoiseBuffer: AudioBuffer | null = null;
 let readyUpBuffer: AudioBuffer | null = null;
 let enterBuffer: AudioBuffer | null = null;
+let countdownNumberBuffer: AudioBuffer | null = null;
+let countdownFinishBuffer: AudioBuffer | null = null;
 
 // Preload all SFX
 for (let i = 1; i <= 18; i++) {
@@ -194,6 +196,8 @@ loadBuffer('audio/sfx/interactions/ring-out/Decreasing note.wav').then(b => { de
 loadBuffer('audio/sfx/interactions/ring-out/Repeated noise.wav').then(b => { repeatedNoiseBuffer = b; }).catch(() => {});
 loadBuffer('audio/sfx/menu/ReadyUp.wav').then(b => { readyUpBuffer = b; }).catch(() => {});
 loadBuffer('audio/sfx/menu/Enter.wav').then(b => { enterBuffer = b; }).catch(() => {});
+loadBuffer('audio/sfx/countdown/Slap Master SFX Countdown Number.mp3').then(b => { countdownNumberBuffer = b; }).catch(() => {});
+loadBuffer('audio/sfx/countdown/Slap Master SFX Countdown Finish.mp3').then(b => { countdownFinishBuffer = b; }).catch(() => {});
 
 let gameSfxMuted = false;
 export function setGameSfxMuted(muted: boolean): void { gameSfxMuted = muted; }
@@ -221,3 +225,5 @@ export function playDashSfx(): void { if (gameSfxMuted) return; playSfx(launchBu
 export function playMelonExplodeSfx(): void { if (gameSfxMuted) return; playSfx(deepBounceBuffer, 0.5); }
 export function playReadyUpSfx(): void { playSfx(readyUpBuffer); }
 export function playEnterSfx(): void { playSfx(enterBuffer); }
+export function playCountdownNumberSfx(): void { playSfx(countdownNumberBuffer); }
+export function playCountdownFinishSfx(): void { playSfx(countdownFinishBuffer); }
