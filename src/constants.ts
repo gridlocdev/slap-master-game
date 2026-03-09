@@ -235,9 +235,39 @@ export const SPEED_LINE_COLOR: Color3Tuple = [1, 1, 1];
 export const MAX_CLOUDS = 8;
 export const MAX_MELONS = 8;
 export const MAX_JUICE_MARKS = 8;
-export const CLOUD_ALPHA = 0.4;
+export const CLOUD_ALPHA = 0.45;
 export const JUICE_MARK_DISC_RADIUS = 0.8;
 export const JUICE_MARK_ALPHA = 0.6;
+
+// Stink cloud — multi-blob gas effect
+export const BLOBS_PER_CLOUD = 6;
+export const CLOUD_CENTER_COLOR: Color3Tuple = [0.08, 0.55, 0.05];
+export const CLOUD_PERI_COLOR_A: Color3Tuple = [0.45, 0.90, 0.10];
+export const CLOUD_PERI_COLOR_B: Color3Tuple = [0.10, 0.72, 0.08];
+export const CLOUD_DRIFT_MAX = 0.55;   // units peripheral blobs drift outward at death
+export const CLOUD_RISE_MAX = 0.45;    // units all blobs rise upward at death
+
+// Melon explosion — flying chunks
+export const MELON_CHUNK_COUNT = 48;   // total pool (8 explosions × 6 chunks)
+export const CHUNKS_PER_EXPLOSION = 6;
+export const CHUNK_SPEED_MIN = 3.5;
+export const CHUNK_SPEED_MAX = 7.0;
+export const CHUNK_VY_MIN = 2.0;
+export const CHUNK_VY_MAX = 5.5;
+export const CHUNK_GRAVITY = 18;
+export const CHUNK_LIFE_MIN = 0.7;
+export const CHUNK_LIFE_MAX = 1.1;
+export const CHUNK_FADE_TIME = 0.25;
+export const CHUNK_RIND_COLOR: Color3Tuple = [0.12, 0.55, 0.08];
+export const CHUNK_FLESH_COLOR: Color3Tuple = [0.85, 0.12, 0.12];
+export const CHUNK_INNER_COLOR: Color3Tuple = [0.95, 0.50, 0.50];
+
+// Ground splatter — multi-piece juice mark
+export const SPLATTER_SATELLITES = 5;
+export const SPLATTER_DROPLETS = 7;
+export const JUICE_MARK_CENTER_COLOR: Color3Tuple = [0.65, 0.04, 0.04];
+export const JUICE_MARK_SAT_COLOR: Color3Tuple = [0.80, 0.10, 0.08];
+export const JUICE_MARK_DROP_COLOR: Color3Tuple = [0.95, 0.18, 0.14];
 
 // HUD
 export const HUD_WIN_FONT_SIZE = 48;

@@ -180,7 +180,7 @@ function goToSelection(): void {
   }
   setHudVisible(hud, false);
   setArenaMeshesVisible(scene, false);
-  updateEffects(effectsPool, state);
+  updateEffects(effectsPool, state, 0);
   resetImpactFx(impactFx, camera);
   if (!savedCamera) {
     savedCamera = enterSelectionCamera(camera);
@@ -211,7 +211,7 @@ function goToMenu(): void {
   }
   setHudVisible(hud, false);
   setArenaMeshesVisible(scene, false);
-  updateEffects(effectsPool, state);
+  updateEffects(effectsPool, state, 0);
   resetImpactFx(impactFx, camera);
   if (!savedCamera) {
     savedCamera = enterSelectionCamera(camera);
@@ -365,7 +365,8 @@ engine.runRenderLoop(() => {
       updatePlayerMeshes(playerMeshes[0], state.players[0], 0, dt);
       updatePlayerMeshes(playerMeshes[1], state.players[1], 1, dt);
       if (cdFx.freeze) applyHitlagVibration(playerMeshes, impactFx.hitlagTimer);
-      updateEffects(effectsPool, state);
+      updateEffects(effectsPool, state, dt);
+      state.melonExplosionEvents.length = 0;
     }
 
   } else {
@@ -463,7 +464,8 @@ engine.runRenderLoop(() => {
         updatePlayerMeshes(playerMeshes[1], state.players[1], 1, dt);
         if (fx.freeze) applyHitlagVibration(playerMeshes, impactFx.hitlagTimer);
         updateHud(hud, state, dt, gameMode === 'ai');
-        updateEffects(effectsPool, state);
+        updateEffects(effectsPool, state, dt);
+        state.melonExplosionEvents.length = 0;
       }
     }
   }

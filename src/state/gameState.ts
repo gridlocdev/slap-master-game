@@ -62,6 +62,7 @@ export function createInitialState(
     melons: [],
     juiceMarks: [],
     hitEvents: [],
+    melonExplosionEvents: [],
     phase: 'playing',
     selections: [null, null],
     scores,

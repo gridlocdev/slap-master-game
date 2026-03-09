@@ -82,6 +82,10 @@ export interface ArenaRect {
   h: number;
 }
 
+export interface MelonExplosionEvent {
+  pos: Vec2;
+}
+
 export interface GameState {
   players: [PlayerState, PlayerState];
   winner: number | null;
@@ -91,6 +95,7 @@ export interface GameState {
   melons: MelonState[];
   juiceMarks: JuiceMark[];
   hitEvents: HitEvent[];
+  melonExplosionEvents: MelonExplosionEvent[];
   phase: 'selecting' | 'playing';
   selections: [AbilityType | null, AbilityType | null];
   scores: [number, number];

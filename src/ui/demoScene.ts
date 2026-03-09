@@ -102,7 +102,8 @@ export function updateDemoScene(demo: DemoScene, dt: number): void {
     // Still update meshes during fall animation
     updatePlayerMeshes(demo.playerMeshes[0], state.players[0], 0, dt);
     updatePlayerMeshes(demo.playerMeshes[1], state.players[1], 1, dt);
-    updateEffects(demo.effectsPool, state);
+    updateEffects(demo.effectsPool, state, dt);
+    state.melonExplosionEvents.length = 0;
     return;
   }
 
@@ -121,7 +122,8 @@ export function updateDemoScene(demo: DemoScene, dt: number): void {
 
   updatePlayerMeshes(demo.playerMeshes[0], state.players[0], 0, dt);
   updatePlayerMeshes(demo.playerMeshes[1], state.players[1], 1, dt);
-  updateEffects(demo.effectsPool, state);
+  updateEffects(demo.effectsPool, state, dt);
+  state.melonExplosionEvents.length = 0;
 }
 
 export function destroyDemoScene(demo: DemoScene): void {

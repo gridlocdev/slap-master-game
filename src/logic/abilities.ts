@@ -227,11 +227,12 @@ export function checkMelonExplosion(state: GameState, playerIdx: number, input: 
         }
       }
 
-      // Leave juice mark
+      // Leave juice mark and explosion event
       state.juiceMarks.push({
         pos: { x: melon.pos.x, y: melon.pos.y },
         timer: JUICE_MARK_DURATION,
       });
+      state.melonExplosionEvents.push({ pos: { x: melon.pos.x, y: melon.pos.y } });
 
       state.melons.splice(i, 1);
       exploded = true;
