@@ -1,46 +1,46 @@
 /**
  * Input prompt icon assets — Kenney Input Prompts 1.4.1
  *
- * All paths are resolved by Vite at build time via `import.meta.glob`.
+ * Files are served statically from public/kenney-input-prompts/.
  * The exported maps let any UI module look up an icon URL by a friendly key.
  */
 
 // ---- Keyboard icons (filled variants) ----
-import kb_w from '../assets/ui/kenney-input-prompts/keyboard/keyboard_w.png';
-import kb_a from '../assets/ui/kenney-input-prompts/keyboard/keyboard_a.png';
-import kb_s from '../assets/ui/kenney-input-prompts/keyboard/keyboard_s.png';
-import kb_d from '../assets/ui/kenney-input-prompts/keyboard/keyboard_d.png';
-import kb_c from '../assets/ui/kenney-input-prompts/keyboard/keyboard_c.png';
-import kb_v from '../assets/ui/kenney-input-prompts/keyboard/keyboard_v.png';
-import kb_e from '../assets/ui/kenney-input-prompts/keyboard/keyboard_e.png';
-import kb_o from '../assets/ui/kenney-input-prompts/keyboard/keyboard_o.png';
-import kb_k from '../assets/ui/kenney-input-prompts/keyboard/keyboard_k.png';
-import kb_l from '../assets/ui/kenney-input-prompts/keyboard/keyboard_l.png';
-import kb_p from '../assets/ui/kenney-input-prompts/keyboard/keyboard_p.png';
-import kb_semicolon from '../assets/ui/kenney-input-prompts/keyboard/keyboard_semicolon.png';
-import kb_arrow_left from '../assets/ui/kenney-input-prompts/keyboard/keyboard_arrow_left.png';
-import kb_arrow_right from '../assets/ui/kenney-input-prompts/keyboard/keyboard_arrow_right.png';
-import kb_space from '../assets/ui/kenney-input-prompts/keyboard/keyboard_space.png';
-import kb_shift from '../assets/ui/kenney-input-prompts/keyboard/keyboard_shift.png';
-import kb_escape from '../assets/ui/kenney-input-prompts/keyboard/keyboard_escape.png';
-import kb_backspace from '../assets/ui/kenney-input-prompts/keyboard/keyboard_backspace.png';
-import kb_device from '../assets/ui/kenney-input-prompts/keyboard/keyboard.png';
+const kb_w           = '/kenney-input-prompts/keyboard/keyboard_w.png';
+const kb_a           = '/kenney-input-prompts/keyboard/keyboard_a.png';
+const kb_s           = '/kenney-input-prompts/keyboard/keyboard_s.png';
+const kb_d           = '/kenney-input-prompts/keyboard/keyboard_d.png';
+const kb_c           = '/kenney-input-prompts/keyboard/keyboard_c.png';
+const kb_v           = '/kenney-input-prompts/keyboard/keyboard_v.png';
+const kb_e           = '/kenney-input-prompts/keyboard/keyboard_e.png';
+const kb_o           = '/kenney-input-prompts/keyboard/keyboard_o.png';
+const kb_k           = '/kenney-input-prompts/keyboard/keyboard_k.png';
+const kb_l           = '/kenney-input-prompts/keyboard/keyboard_l.png';
+const kb_p           = '/kenney-input-prompts/keyboard/keyboard_p.png';
+const kb_semicolon   = '/kenney-input-prompts/keyboard/keyboard_semicolon.png';
+const kb_arrow_left  = '/kenney-input-prompts/keyboard/keyboard_arrow_left.png';
+const kb_arrow_right = '/kenney-input-prompts/keyboard/keyboard_arrow_right.png';
+const kb_space       = '/kenney-input-prompts/keyboard/keyboard_space.png';
+const kb_shift       = '/kenney-input-prompts/keyboard/keyboard_shift.png';
+const kb_escape      = '/kenney-input-prompts/keyboard/keyboard_escape.png';
+const kb_backspace   = '/kenney-input-prompts/keyboard/keyboard_backspace.png';
+const kb_device      = '/kenney-input-prompts/keyboard/keyboard.png';
 
 // ---- Xbox controller icons (filled / color variants) ----
-import gp_stick_l from '../assets/ui/kenney-input-prompts/xbox/xbox_stick_l.png';
-import gp_dpad_left from '../assets/ui/kenney-input-prompts/xbox/xbox_dpad_left.png';
-import gp_dpad_right from '../assets/ui/kenney-input-prompts/xbox/xbox_dpad_right.png';
-import gp_dpad_up from '../assets/ui/kenney-input-prompts/xbox/xbox_dpad_up.png';
-import gp_dpad_down from '../assets/ui/kenney-input-prompts/xbox/xbox_dpad_down.png';
-import gp_dpad from '../assets/ui/kenney-input-prompts/xbox/xbox_dpad.png';
-import gp_lt from '../assets/ui/kenney-input-prompts/xbox/xbox_lt.png';
-import gp_rt from '../assets/ui/kenney-input-prompts/xbox/xbox_rt.png';
-import gp_x from '../assets/ui/kenney-input-prompts/xbox/xbox_button_color_x.png';
-import gp_b from '../assets/ui/kenney-input-prompts/xbox/xbox_button_color_b.png';
-import gp_a from '../assets/ui/kenney-input-prompts/xbox/xbox_button_color_a.png';
-import gp_back from '../assets/ui/kenney-input-prompts/xbox/xbox_button_back_icon.png';
-import gp_view from '../assets/ui/kenney-input-prompts/xbox/xbox_button_view.png';
-import gp_device from '../assets/ui/kenney-input-prompts/xbox/controller_xboxseries.png';
+const gp_stick_l    = '/kenney-input-prompts/xbox/xbox_stick_l.png';
+const gp_dpad_left  = '/kenney-input-prompts/xbox/xbox_dpad_left.png';
+const gp_dpad_right = '/kenney-input-prompts/xbox/xbox_dpad_right.png';
+const gp_dpad_up    = '/kenney-input-prompts/xbox/xbox_dpad_up.png';
+const gp_dpad_down  = '/kenney-input-prompts/xbox/xbox_dpad_down.png';
+const gp_dpad       = '/kenney-input-prompts/xbox/xbox_dpad.png';
+const gp_lt         = '/kenney-input-prompts/xbox/xbox_lt.png';
+const gp_rt         = '/kenney-input-prompts/xbox/xbox_rt.png';
+const gp_x          = '/kenney-input-prompts/xbox/xbox_button_color_x.png';
+const gp_b          = '/kenney-input-prompts/xbox/xbox_button_color_b.png';
+const gp_a          = '/kenney-input-prompts/xbox/xbox_button_color_a.png';
+const gp_back       = '/kenney-input-prompts/xbox/xbox_button_back_icon.png';
+const gp_view       = '/kenney-input-prompts/xbox/xbox_button_view.png';
+const gp_device     = '/kenney-input-prompts/xbox/controller_xboxseries.png';
 
 // ---- Lookup maps ----
 
