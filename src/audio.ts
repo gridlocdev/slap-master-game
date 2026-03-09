@@ -30,6 +30,7 @@ document.addEventListener('keydown', resumeOnInteraction);
 // --- BGM ---
 
 let menuBuffer: AudioBuffer | null = null;
+let menuTrim = { start: 0, end: 0 };
 let menuSource: AudioBufferSourceNode | null = null;
 let fadeRaf = 0;
 let playing = false;
@@ -38,8 +39,41 @@ function loadBuffer(url: string): Promise<AudioBuffer> {
   return fetch(url).then(r => r.arrayBuffer()).then(buf => ctx.decodeAudioData(buf));
 }
 
+function trimPoints(buffer: AudioBuffer): { start: number; end: number } {
+  const threshold = 0.005;
+  const rate = buffer.sampleRate;
+  const channels = buffer.numberOfChannels;
+  const length = buffer.length;
+
+  let firstSample = 0;
+  let lastSample = length - 1;
+
+  outer: for (let i = 0; i < length; i++) {
+    for (let ch = 0; ch < channels; ch++) {
+      if (Math.abs(buffer.getChannelData(ch)[i]) > threshold) {
+        firstSample = i;
+        break outer;
+      }
+    }
+  }
+
+  outer2: for (let i = length - 1; i >= 0; i--) {
+    for (let ch = 0; ch < channels; ch++) {
+      if (Math.abs(buffer.getChannelData(ch)[i]) > threshold) {
+        lastSample = i;
+        break outer2;
+      }
+    }
+  }
+
+  return { start: firstSample / rate, end: (lastSample + 1) / rate };
+}
+
 loadBuffer('audio/bgm/Slap Master Ability Select.mp3')
-  .then(decoded => { menuBuffer = decoded; })
+  .then(decoded => {
+    menuBuffer = decoded;
+    menuTrim = trimPoints(decoded);
+  })
   .catch(() => {});
 
 let mainMenuBuffer: AudioBuffer | null = null;
@@ -75,9 +109,11 @@ export function playAbilitySelectBGM(): void {
   const src = ctx.createBufferSource();
   src.buffer = menuBuffer;
   src.loop = true;
+  src.loopStart = menuTrim.start;
+  src.loopEnd = menuTrim.end;
   src.connect(musicGain);
   musicGain.gain.value = getSettings().musicVolume / 100;
-  src.start();
+  src.start(0, menuTrim.start);
   menuSource = src;
   playing = true;
 }
