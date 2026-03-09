@@ -128,6 +128,7 @@ function stopGameplaySource(): void {
 }
 
 export function playGameplayBGM(): void {
+  if (gameplayPlaying) return;
   cancelAnimationFrame(gameplayFadeRaf);
   if (!gameplayBuffer) return;
   stopGameplaySource();

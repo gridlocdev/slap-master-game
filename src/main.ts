@@ -103,7 +103,6 @@ function startGame(p1Ability: AbilityType, p2Ability: AbilityType, scores: [numb
   gamePhase = 'countdown';
   countdownUI = createCountdownUI(scene);
   fadeOutAbilitySelectBGM();
-  playGameplayBGM();
   if (selectionUI) {
     destroySelectionUI(selectionUI);
     selectionUI = null;
@@ -331,6 +330,7 @@ engine.runRenderLoop(() => {
         countdownUI = null;
         gamePhase = 'playing';
         setHudVisible(hud, true, gameMode === 'ai');
+        playGameplayBGM();
       }
 
       // Read input (same as playing phase)
