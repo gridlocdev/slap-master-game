@@ -68,4 +68,4 @@ pnpm build
 pnpm preview
 ```
 
-Open your browser to the local URL printed by `npm run dev` (usually `http://localhost:5173`).
+Open your browser to the local URL printed by `pnpm dev` (usually `http://localhost:5173`).
