@@ -308,11 +308,11 @@ export function updateEffects(pool: EffectsPool, state: GameState, dt: number): 
       // Spawn pop: grow in during first 15% of life
       const progress = 1 - t;
       const spawnScale = progress < 0.15 ? progress / 0.15 : 1;
-      // Death shrink: collapse in final 30%
-      const deathScale = t < 0.30 ? t / 0.30 : 1;
+      // Gas expands as it dissipates — blobs grow larger, not smaller
+      const expansion = 1 + (1 - t) * 0.35;
       // Gentle breathing pulse
       const pulse = 1 + 0.05 * Math.sin(now * 0.003 + bi * 1.3);
-      const scale = cfg.sizeFactor * spawnScale * deathScale * pulse;
+      const scale = cfg.sizeFactor * spawnScale * expansion * pulse;
 
       // Drift: peripheral blobs expand outward and rise as cloud dies
       const driftAmt = (1 - t) * CLOUD_DRIFT_MAX;
@@ -326,7 +326,7 @@ export function updateEffects(pool: EffectsPool, state: GameState, dt: number): 
       // Scale is baked into mesh diameter at creation; apply runtime scale on top
       mesh.scaling.setAll(scale);
 
-      mat.alpha = CLOUD_ALPHA * Math.pow(t, 0.6);
+      mat.alpha = CLOUD_ALPHA * Math.pow(t, 0.5);
     }
   }
 

@@ -235,7 +235,7 @@ export const SPEED_LINE_COLOR: Color3Tuple = [1, 1, 1];
 export const MAX_CLOUDS = 8;
 export const MAX_MELONS = 8;
 export const MAX_JUICE_MARKS = 8;
-export const CLOUD_ALPHA = 0.45;
+export const CLOUD_ALPHA = 0.30;
 export const JUICE_MARK_DISC_RADIUS = 0.8;
 export const JUICE_MARK_ALPHA = 0.6;
 
