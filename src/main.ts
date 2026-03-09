@@ -29,7 +29,7 @@ import type { DifficultyMenuUI } from './ui/difficultyMenu.ts';
 import { createSettingsMenu, updateSettingsMenu, destroySettingsMenu } from './ui/settingsMenu.ts';
 import type { SettingsMenuUI } from './ui/settingsMenu.ts';
 import { RESTART_DELAY, SPEED_LINE_THRESHOLD } from './constants.ts';
-import { playAbilitySelectBGM, fadeOutAbilitySelectBGM, stopAbilitySelectBGM, playMenuBackSfx, playMainMenuBGM, fadeOutMainMenuBGM, setGameSfxMuted, playGameplayBGM, fadeOutGameplayBGM, stopGameplayBGM } from './audio.ts';
+import { playAbilitySelectBGM, fadeOutAbilitySelectBGM, stopAbilitySelectBGM, playMenuBackSfx, playMainMenuBGM, fadeOutMainMenuBGM, setGameSfxMuted, playGameplayBGM, fadeOutGameplayBGM, stopGameplayBGM, pauseGameplayBGM, resumeGameplayBGM } from './audio.ts';
 import { initDefaultAssignment } from './ui/inputAssign.ts';
 import { createAIState, updateAI } from './ai/aiController.ts';
 import type { AIState } from './ai/aiConfig.ts';
@@ -150,6 +150,7 @@ function resumeGame(): void {
     pauseMenuUI = null;
   }
   isPaused = false;
+  resumeGameplayBGM();
 }
 
 function handlePauseAction(action: string | null): void {
@@ -308,6 +309,7 @@ engine.runRenderLoop(() => {
         resumeGame();
       } else {
         isPaused = true;
+        pauseGameplayBGM();
         pauseMenuUI = createPauseMenuUI(scene);
       }
     }
@@ -374,6 +376,7 @@ engine.runRenderLoop(() => {
         resumeGame();
       } else {
         isPaused = true;
+        pauseGameplayBGM();
         pauseMenuUI = createPauseMenuUI(scene);
       }
     }

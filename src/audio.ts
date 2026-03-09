@@ -112,7 +112,10 @@ export function stopAbilitySelectBGM(): void {
 let gameplayBuffer: AudioBuffer | null = null;
 let gameplaySource: AudioBufferSourceNode | null = null;
 let gameplayPlaying = false;
+let gameplayPaused = false;
 let gameplayFadeRaf = 0;
+let gameplayStartContextTime = 0;
+let gameplaySavedOffset = 0;
 
 loadBuffer('audio/bgm/Slap Master Gameplay.mp3')
   .then(decoded => { gameplayBuffer = decoded; })
@@ -138,9 +141,36 @@ export function playGameplayBGM(): void {
   src.loop = true;
   src.connect(gameplayMusicGain);
   gameplayMusicGain.gain.value = getSettings().musicVolume / 100;
-  src.start();
+  gameplaySavedOffset = 0;
+  gameplayPaused = false;
+  src.start(0, 0);
+  gameplayStartContextTime = ctx.currentTime;
   gameplaySource = src;
   gameplayPlaying = true;
+}
+
+export function pauseGameplayBGM(): void {
+  if (!gameplayPlaying) return;
+  const elapsed = ctx.currentTime - gameplayStartContextTime;
+  gameplaySavedOffset = (gameplaySavedOffset + elapsed) % gameplayBuffer!.duration;
+  stopGameplaySource();
+  gameplayPaused = true;
+}
+
+export function resumeGameplayBGM(): void {
+  if (!gameplayPaused || !gameplayBuffer) return;
+  cancelAnimationFrame(gameplayFadeRaf);
+  if (ctx.state === 'suspended') ctx.resume();
+  const src = ctx.createBufferSource();
+  src.buffer = gameplayBuffer;
+  src.loop = true;
+  src.connect(gameplayMusicGain);
+  gameplayMusicGain.gain.value = getSettings().musicVolume / 100;
+  src.start(0, gameplaySavedOffset);
+  gameplayStartContextTime = ctx.currentTime;
+  gameplaySource = src;
+  gameplayPlaying = true;
+  gameplayPaused = false;
 }
 
 export function fadeOutGameplayBGM(durationMs = 500): void {
@@ -166,6 +196,7 @@ export function fadeOutGameplayBGM(durationMs = 500): void {
 export function stopGameplayBGM(): void {
   cancelAnimationFrame(gameplayFadeRaf);
   stopGameplaySource();
+  gameplayPaused = false;
 }
 
 // --- Main Menu BGM ---
