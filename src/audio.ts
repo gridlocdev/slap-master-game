@@ -3,6 +3,8 @@ import { getSettings } from './settings.ts';
 const ctx = new AudioContext();
 const musicGain = ctx.createGain();
 musicGain.connect(ctx.destination);
+const gameplayMusicGain = ctx.createGain();
+gameplayMusicGain.connect(ctx.destination);
 const mainMenuMusicGain = ctx.createGain();
 mainMenuMusicGain.connect(ctx.destination);
 const sfxGain = ctx.createGain();
@@ -105,6 +107,66 @@ export function stopAbilitySelectBGM(): void {
   stopSource();
 }
 
+// --- Gameplay BGM ---
+
+let gameplayBuffer: AudioBuffer | null = null;
+let gameplaySource: AudioBufferSourceNode | null = null;
+let gameplayPlaying = false;
+let gameplayFadeRaf = 0;
+
+loadBuffer('audio/bgm/Slap Master Gameplay.mp3')
+  .then(decoded => { gameplayBuffer = decoded; })
+  .catch(() => {});
+
+function stopGameplaySource(): void {
+  if (gameplaySource) {
+    gameplaySource.stop();
+    gameplaySource.disconnect();
+    gameplaySource = null;
+  }
+  gameplayPlaying = false;
+}
+
+export function playGameplayBGM(): void {
+  cancelAnimationFrame(gameplayFadeRaf);
+  if (!gameplayBuffer) return;
+  stopGameplaySource();
+  if (ctx.state === 'suspended') ctx.resume();
+  const src = ctx.createBufferSource();
+  src.buffer = gameplayBuffer;
+  src.loop = true;
+  src.connect(gameplayMusicGain);
+  gameplayMusicGain.gain.value = getSettings().musicVolume / 100;
+  src.start();
+  gameplaySource = src;
+  gameplayPlaying = true;
+}
+
+export function fadeOutGameplayBGM(durationMs = 500): void {
+  if (!gameplayPlaying) return;
+  const startVol = gameplayMusicGain.gain.value;
+  if (startVol === 0) { stopGameplaySource(); return; }
+  const startTime = performance.now();
+
+  function tick() {
+    const elapsed = performance.now() - startTime;
+    const t = Math.min(elapsed / durationMs, 1);
+    gameplayMusicGain.gain.value = startVol * (1 - t);
+    if (t < 1) {
+      gameplayFadeRaf = requestAnimationFrame(tick);
+    } else {
+      stopGameplaySource();
+    }
+  }
+
+  gameplayFadeRaf = requestAnimationFrame(tick);
+}
+
+export function stopGameplayBGM(): void {
+  cancelAnimationFrame(gameplayFadeRaf);
+  stopGameplaySource();
+}
+
 // --- Main Menu BGM ---
 
 function stopMainMenuSource(): void {
@@ -162,6 +224,9 @@ export function updateMusicVolume(): void {
   const vol = getSettings().musicVolume / 100;
   if (playing) {
     musicGain.gain.value = vol;
+  }
+  if (gameplayPlaying) {
+    gameplayMusicGain.gain.value = vol;
   }
   if (mainMenuPlaying) {
     mainMenuMusicGain.gain.value = vol;

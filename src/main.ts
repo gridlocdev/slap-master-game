@@ -29,7 +29,7 @@ import type { DifficultyMenuUI } from './ui/difficultyMenu.ts';
 import { createSettingsMenu, updateSettingsMenu, destroySettingsMenu } from './ui/settingsMenu.ts';
 import type { SettingsMenuUI } from './ui/settingsMenu.ts';
 import { RESTART_DELAY, SPEED_LINE_THRESHOLD } from './constants.ts';
-import { playAbilitySelectBGM, fadeOutAbilitySelectBGM, stopAbilitySelectBGM, playMenuBackSfx, playMainMenuBGM, fadeOutMainMenuBGM, setGameSfxMuted } from './audio.ts';
+import { playAbilitySelectBGM, fadeOutAbilitySelectBGM, stopAbilitySelectBGM, playMenuBackSfx, playMainMenuBGM, fadeOutMainMenuBGM, setGameSfxMuted, playGameplayBGM, fadeOutGameplayBGM, stopGameplayBGM } from './audio.ts';
 import { initDefaultAssignment } from './ui/inputAssign.ts';
 import { createAIState, updateAI } from './ai/aiController.ts';
 import type { AIState } from './ai/aiConfig.ts';
@@ -103,6 +103,7 @@ function startGame(p1Ability: AbilityType, p2Ability: AbilityType, scores: [numb
   gamePhase = 'countdown';
   countdownUI = createCountdownUI(scene);
   fadeOutAbilitySelectBGM();
+  playGameplayBGM();
   if (selectionUI) {
     destroySelectionUI(selectionUI);
     selectionUI = null;
@@ -170,6 +171,7 @@ function goToSelection(): void {
   setGameSfxMuted(false);
   state = createSelectionState();
   gamePhase = 'selecting';
+  fadeOutGameplayBGM();
   playAbilitySelectBGM();
   selectionUI = createSelectionUI(scene, { mode: gameMode });
   if (countdownUI) {
@@ -198,6 +200,7 @@ function stopDemo(): void {
 function goToMenu(): void {
   setGameSfxMuted(true);
   stopAbilitySelectBGM();
+  stopGameplayBGM();
   playMainMenuBGM();
   state = createSelectionState();
   gamePhase = 'menu';
