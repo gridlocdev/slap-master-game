@@ -6,6 +6,8 @@
 
 A local multiplayer fighting game where you play as floating heads with big ol' hands. Inspired by Wii Sports Boxing and Circle of Sumo.
 
+![gameplay](public/screenshots/gameplay.png)
+
 ---
 
 ## How to Play
