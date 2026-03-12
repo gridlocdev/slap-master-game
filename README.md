@@ -18,17 +18,17 @@ Knock your opponent off the stage with well-timed slaps. First to win 2 rounds w
 
 ### Controls
 
-|                  | Player 1     | Player 2        |
-|------------------|--------------|-----------------|
-| Move forward     | `W`          | `O`             |
-| Move backward    | `S`          | `L`             |
-| Strafe left      | `A`          | `K`             |
-| Strafe right     | `D`          | `;`             |
-| Left slap        | `C`          | `Arrow Left`    |
-| Right slap       | `V`          | `Arrow Right`   |
-| Special ability  | `E`          | `P`             |
+Each player can use keyboard (left or right side) or a gamepad.
 
-Gamepads are also supported.
+|                  | Keyboard Left    | Keyboard Right  | Gamepad            |
+|------------------|------------------|-----------------|--------------------|
+| Move forward     | `W`              | `O`             | Left stick / D-pad |
+| Move backward    | `S`              | `L`             | Left stick / D-pad |
+| Strafe left      | `A`              | `K`             | Left stick / D-pad |
+| Strafe right     | `D`              | `;`             | Left stick / D-pad |
+| Left slap        | `C`              | `Arrow Left`    | LT                 |
+| Right slap       | `V`              | `Arrow Right`   | RT                 |
+| Special ability  | `E`              | `P`             | X                  |
 
 ### Combat
 
