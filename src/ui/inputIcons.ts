@@ -5,42 +5,44 @@
  * The exported maps let any UI module look up an icon URL by a friendly key.
  */
 
+const base = import.meta.env.BASE_URL;
+
 // ---- Keyboard icons (filled variants) ----
-const kb_w           = '/kenney-input-prompts/keyboard/keyboard_w.png';
-const kb_a           = '/kenney-input-prompts/keyboard/keyboard_a.png';
-const kb_s           = '/kenney-input-prompts/keyboard/keyboard_s.png';
-const kb_d           = '/kenney-input-prompts/keyboard/keyboard_d.png';
-const kb_c           = '/kenney-input-prompts/keyboard/keyboard_c.png';
-const kb_v           = '/kenney-input-prompts/keyboard/keyboard_v.png';
-const kb_e           = '/kenney-input-prompts/keyboard/keyboard_e.png';
-const kb_o           = '/kenney-input-prompts/keyboard/keyboard_o.png';
-const kb_k           = '/kenney-input-prompts/keyboard/keyboard_k.png';
-const kb_l           = '/kenney-input-prompts/keyboard/keyboard_l.png';
-const kb_p           = '/kenney-input-prompts/keyboard/keyboard_p.png';
-const kb_semicolon   = '/kenney-input-prompts/keyboard/keyboard_semicolon.png';
-const kb_arrow_left  = '/kenney-input-prompts/keyboard/keyboard_arrow_left.png';
-const kb_arrow_right = '/kenney-input-prompts/keyboard/keyboard_arrow_right.png';
-const kb_space       = '/kenney-input-prompts/keyboard/keyboard_space.png';
-const kb_shift       = '/kenney-input-prompts/keyboard/keyboard_shift.png';
-const kb_escape      = '/kenney-input-prompts/keyboard/keyboard_escape.png';
-const kb_backspace   = '/kenney-input-prompts/keyboard/keyboard_backspace.png';
-const kb_device      = '/kenney-input-prompts/keyboard/keyboard.png';
+const kb_w           = `${base}kenney-input-prompts/keyboard/keyboard_w.png`;
+const kb_a           = `${base}kenney-input-prompts/keyboard/keyboard_a.png`;
+const kb_s           = `${base}kenney-input-prompts/keyboard/keyboard_s.png`;
+const kb_d           = `${base}kenney-input-prompts/keyboard/keyboard_d.png`;
+const kb_c           = `${base}kenney-input-prompts/keyboard/keyboard_c.png`;
+const kb_v           = `${base}kenney-input-prompts/keyboard/keyboard_v.png`;
+const kb_e           = `${base}kenney-input-prompts/keyboard/keyboard_e.png`;
+const kb_o           = `${base}kenney-input-prompts/keyboard/keyboard_o.png`;
+const kb_k           = `${base}kenney-input-prompts/keyboard/keyboard_k.png`;
+const kb_l           = `${base}kenney-input-prompts/keyboard/keyboard_l.png`;
+const kb_p           = `${base}kenney-input-prompts/keyboard/keyboard_p.png`;
+const kb_semicolon   = `${base}kenney-input-prompts/keyboard/keyboard_semicolon.png`;
+const kb_arrow_left  = `${base}kenney-input-prompts/keyboard/keyboard_arrow_left.png`;
+const kb_arrow_right = `${base}kenney-input-prompts/keyboard/keyboard_arrow_right.png`;
+const kb_space       = `${base}kenney-input-prompts/keyboard/keyboard_space.png`;
+const kb_shift       = `${base}kenney-input-prompts/keyboard/keyboard_shift.png`;
+const kb_escape      = `${base}kenney-input-prompts/keyboard/keyboard_escape.png`;
+const kb_backspace   = `${base}kenney-input-prompts/keyboard/keyboard_backspace.png`;
+const kb_device      = `${base}kenney-input-prompts/keyboard/keyboard.png`;
 
 // ---- Xbox controller icons (filled / color variants) ----
-const gp_stick_l    = '/kenney-input-prompts/xbox/xbox_stick_l.png';
-const gp_dpad_left  = '/kenney-input-prompts/xbox/xbox_dpad_left.png';
-const gp_dpad_right = '/kenney-input-prompts/xbox/xbox_dpad_right.png';
-const gp_dpad_up    = '/kenney-input-prompts/xbox/xbox_dpad_up.png';
-const gp_dpad_down  = '/kenney-input-prompts/xbox/xbox_dpad_down.png';
-const gp_dpad       = '/kenney-input-prompts/xbox/xbox_dpad.png';
-const gp_lt         = '/kenney-input-prompts/xbox/xbox_lt.png';
-const gp_rt         = '/kenney-input-prompts/xbox/xbox_rt.png';
-const gp_x          = '/kenney-input-prompts/xbox/xbox_button_color_x.png';
-const gp_b          = '/kenney-input-prompts/xbox/xbox_button_color_b.png';
-const gp_a          = '/kenney-input-prompts/xbox/xbox_button_color_a.png';
-const gp_back       = '/kenney-input-prompts/xbox/xbox_button_back_icon.png';
-const gp_view       = '/kenney-input-prompts/xbox/xbox_button_view.png';
-const gp_device     = '/kenney-input-prompts/xbox/controller_xboxseries.png';
+const gp_stick_l    = `${base}kenney-input-prompts/xbox/xbox_stick_l.png`;
+const gp_dpad_left  = `${base}kenney-input-prompts/xbox/xbox_dpad_left.png`;
+const gp_dpad_right = `${base}kenney-input-prompts/xbox/xbox_dpad_right.png`;
+const gp_dpad_up    = `${base}kenney-input-prompts/xbox/xbox_dpad_up.png`;
+const gp_dpad_down  = `${base}kenney-input-prompts/xbox/xbox_dpad_down.png`;
+const gp_dpad       = `${base}kenney-input-prompts/xbox/xbox_dpad.png`;
+const gp_lt         = `${base}kenney-input-prompts/xbox/xbox_lt.png`;
+const gp_rt         = `${base}kenney-input-prompts/xbox/xbox_rt.png`;
+const gp_x          = `${base}kenney-input-prompts/xbox/xbox_button_color_x.png`;
+const gp_b          = `${base}kenney-input-prompts/xbox/xbox_button_color_b.png`;
+const gp_a          = `${base}kenney-input-prompts/xbox/xbox_button_color_a.png`;
+const gp_back       = `${base}kenney-input-prompts/xbox/xbox_button_back_icon.png`;
+const gp_view       = `${base}kenney-input-prompts/xbox/xbox_button_view.png`;
+const gp_device     = `${base}kenney-input-prompts/xbox/controller_xboxseries.png`;
 
 // ---- Lookup maps ----
 
