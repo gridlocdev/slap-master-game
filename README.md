@@ -25,4 +25,4 @@ See [Getting started](docs/getting-started.md) for requirements and other ways t
 
 ## License
 
-[MIT](LICENSE). The sound effects and button prompts have their own licenses, listed in [Credits](docs/credits.md).
+[MIT](LICENSE). The slap sounds and button prompts have their own licenses, listed in [Credits](docs/credits.md).
