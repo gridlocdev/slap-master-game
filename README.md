@@ -2,7 +2,7 @@
 
 A local multiplayer fighting game where you play as a floating head with big ol' hands, and win by slapping your opponent off the arena. It's inspired by Wii Sports Boxing and Circle of Sumo.
 
-<p align="center"><img src="docs/images/gameplay.webp" alt="Two players trading slaps, seen from above on a dark blue background: a red head on the left and a blue head on the right, each with a white ring on top, slap hands between them in a pink-and-white burst of impact lines, while the red head's other hand glows yellow as it winds up and the blue head's other hand rests below it in light blue" width="420"></p>
+![A match against the AI on the dark arena floor, seen from above: the red AI fighter with a white headband closes in on the small blue Literal Child near the bottom-left edge, faint green stink clouds from a Black Bean Burrito dash hang in the middle, the score 0 – 1 sits at the top, and the bottom bar shows Player 1's keys, both abilities and the reminder to slap your opponent off the arena](docs/images/gameplay.webp)
 
 - **Two players on one computer, or you against the computer.** Share the keyboard, use gamepads, or pick **vs AI** at one of four difficulties.
 - **Best of three rounds.** Slap with either hand, or both at once for a double slap, and knock the other head off the edge.
