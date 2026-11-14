@@ -122,7 +122,7 @@ export function createControlsMenu(scene: Scene): ControlsMenuUI {
   gpColumnsRow.addControl(gpRightCol);
 
   gpRightCol.addControl(sectionLabel('— Menu —'));
-  gpRightCol.addControl(controlRow('Pause  ', [{ icon: GP_ICONS.view }]));
+  gpRightCol.addControl(controlRow('Pause  ', [{ icon: GP_ICONS.menu }]));
   gpRightCol.addControl(controlRow('Back / Menu  ', [{ icon: GP_ICONS.b }]));
   gpRightCol.addControl(controlRow('Confirm  ', [{ icon: GP_ICONS.a }]));
   gpRightCol.addControl(controlRow('Input Setup  ', [{ icon: GP_ICONS.back }]));

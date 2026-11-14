@@ -306,7 +306,7 @@ function syncPanelVisuals(ui: InputAssignUI): void {
   } else if (soloP1) {
     ui.instructionText.text = 'Press Select to start solo';
   } else if (bothAssigned) {
-    ui.instructionText.text = 'Press ` or Select to ready up';
+    ui.instructionText.text = 'Press Shift or Select to ready up';
   } else {
     ui.instructionText.text = 'KB: press your keys · Gamepad: left stick left=P1, right=P2';
   }

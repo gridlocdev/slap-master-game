@@ -42,6 +42,7 @@ const gp_b          = `${base}kenney-input-prompts/xbox/xbox_button_color_b.png`
 const gp_a          = `${base}kenney-input-prompts/xbox/xbox_button_color_a.png`;
 const gp_back       = `${base}kenney-input-prompts/xbox/xbox_button_back_icon.png`;
 const gp_view       = `${base}kenney-input-prompts/xbox/xbox_button_view.png`;
+const gp_menu       = `${base}kenney-input-prompts/xbox/xbox_button_menu.png`;
 const gp_device     = `${base}kenney-input-prompts/xbox/controller_xboxseries.png`;
 
 // ---- Lookup maps ----
@@ -84,6 +85,7 @@ export const GP_ICONS: Record<string, string> = {
   a: gp_a,
   back: gp_back,
   view: gp_view,
+  menu: gp_menu,
   device: gp_device,
 };
 
