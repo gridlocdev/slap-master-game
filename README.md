@@ -1,73 +1,24 @@
 # Slap Master
 
-<p align="center">
-  <img src="public/icons/favicon.png" alt="Slap Master" width="200"/>
-</p>
+A local multiplayer fighting game where you play as a floating head with big ol' hands, and win by slapping your opponent off the arena. It's inspired by Wii Sports Boxing and Circle of Sumo.
 
-A local multiplayer fighting game where you play as floating heads with big ol' hands. Inspired by Wii Sports Boxing and Circle of Sumo.
+<p align="center"><img src="docs/images/gameplay.webp" alt="Two players trading slaps, seen from above on a dark blue background: a red head on the left and a blue head on the right, each with a white ring on top, slap hands between them in a pink-and-white burst of impact lines, while the red head's other hand glows yellow as it winds up and the blue head's other hand rests below it in light blue" width="420"></p>
 
-![gameplay](public/screenshots/gameplay.png)
+- **Two players on one computer, or you against the computer.** Share the keyboard, use gamepads, or pick **vs AI** at one of four difficulties.
+- **Best of three rounds.** Slap with either hand, or both at once for a double slap, and knock the other head off the edge.
+- **Three abilities.** Before each match, pick a dash that leaves a stink cloud, a small fast child, or an exploding melon.
 
----
+## Getting started
 
-## How to Play
-
-### Objective
-
-Knock your opponent off the stage with well-timed slaps. First to win 2 rounds wins the match.
-
-### Controls
-
-Each player can use keyboard (left or right side) or a gamepad.
-
-|                  | Keyboard Left    | Keyboard Right  | Gamepad            |
-|------------------|------------------|-----------------|--------------------|
-| Move forward     | `W`              | `O`             | Left stick / D-pad |
-| Move backward    | `S`              | `L`             | Left stick / D-pad |
-| Strafe left      | `A`              | `K`             | Left stick / D-pad |
-| Strafe right     | `D`              | `;`             | Left stick / D-pad |
-| Left slap        | `C`              | `Arrow Left`    | LT                 |
-| Right slap       | `V`              | `Arrow Right`   | RT                 |
-| Special ability  | `E`              | `P`             | X                  |
-
-### Combat
-
-- **Slap** — Hit your opponent to send them flying. The closer you are, the stronger the hit.
-- **Double slap** — Press both slap buttons at the same time for a powerful two-handed strike with massive knockback.
-- **Clash** — If two slaps collide, both players bounce back.
-- **Ring-out** — Knock your opponent off the edge to win the round.
-
-### Abilities
-
-Choose one ability at the start of each match:
-
-**Burrito (Dash)**
-Rocket yourself toward your opponent at high speed, leaving a stink cloud behind. Stink clouds slow down anyone who walks through them.
-
-**Child (Speed)**
-Shrink down, move faster, and take less knockback. Use quick taunts to stay unpredictable.
-
-**Melon (Projectile)**
-Throw a melon at your opponent. Double-slap near the melon to trigger an explosion that launches anyone caught in the blast.
-
----
-
-## Building & Running Locally
-
-**Prerequisites:** [Node.js](https://nodejs.org) (v18+) and [pnpm](https://pnpm.io).
+Play it in your browser at [gridloc.dev/games/slap-master](https://gridloc.dev/games/slap-master), or run it from source:
 
 ```bash
-# Install dependencies
-pnpm install
-
-# Start the development server (with hot reload)
-pnpm dev
-
-# Build for production
-pnpm build
-
-# Preview the production build
-pnpm preview
+pnpm install && pnpm dev   # serve on http://localhost:5173
 ```
 
-Open your browser to the local URL printed by `pnpm dev` (usually `http://localhost:5173`).
+See [Getting started](docs/getting-started.md) for requirements and other ways to run it.
+
+## Learn more
+
+- [How to play](docs/features.md) · [Controls](docs/controls.md) · [Credits](docs/credits.md)
+- [All documentation](docs/README.md) · [Working on the code](docs/development.md)
